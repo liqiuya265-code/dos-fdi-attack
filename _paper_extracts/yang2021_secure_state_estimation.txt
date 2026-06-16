@@ -1,0 +1,968 @@
+2036                                                   IEEE TRANSACTIONS ON NETWORK SCIENCE AND ENGINEERING, VOL. 8, NO. 3, JULY-SEPTEMBER 2021
+
+
+
+
+                 Distributed Secure State Estimation Under
+                         Stochastic Linear Attacks
+                                                Wen Yang , Weijie Luo , and Xinting Zhang
+
+
+   Abstract—With the widespread applications of Cyber-Physical                     community towards the urgency of investigating effective
+Systems, the security problem of distributed state estimation has                  defensive approaches. Many previous achievements have con-
+been exposed, and attracted considerable attentions. In this
+paper, we consider the issue of distributed secure state estimation                tributed to the research of sensor network security.
+under stochastic linear attacks. Inspired by the method applied                       In general, the malicious attacks can be roughly classified as
+in anomaly detection, we propose a K-L divergence detector to                      Denial-of-Service (DoS) attack, replay attack, and false data
+resist the hostile attacks to guarantee an accurate estimation. For                injection (FDI) attack, etc. The optimal DoS attack schedules
+the proposed estimator equipped with the detector, we derive the                   are investigated in [10], which aims at jamming the communi-
+optimal estimator gain, and establish a sufficient condition to
+guarantee the convergence of estimation error covariance.                          cation channel to degrade the estimation performance. A
+Furthermore, we provide a critical threshold selection method                      method to detect the DoS attack based on the prior of the
+for the K-L divergence detector by simplifying the form of K-L                     packet drop sequence distribution is proposed in [11]. To
+divergence under Gaussian distribution. Finally, the effectiveness                 degrade the negative effects of replay attack on the estimation
+of the detector is verified by some numerical examples, and the                    performance, a compensation strategy is studied in [12]. The
+performance comparison with a typical detector is provided.
+                                                                                   FDI attack also has aroused considerable attention, and the
+   Index Terms—Cyber-physical system, False data injection                         classical x2 false-data detector has applied to defend it [13],
+attack, Kullback-Leibler divergence, State estimation.
+                                                                                   [14], but x2 detection is constrained by the Gaussian scenario,
+                                                                                   which is not conducive to extension in the further research.
+                                                                                   Further, different from attack detection, some are focus on the
+                            I. INTRODUCTION
+                                                                                   resilient algorithms which can make the system work properly
+
+A      DVANCES in information technologies have promoted
+       the widespread applications of Cyber-Physical Systems
+(CPS) in critical infrastructures ranging from smart cities to
+                                                                                   even under attacks [15], [16].
+                                                                                      Several countermeasures are proposed in the aforemen-
+                                                                                   tioned studies, however, most of them are in the context of the
+intelligent industries. Depending on computing and networked                       centralized state estimation. As far as we know, although the
+machines, CPS contributes to enhancing efficiency, collabora-                      distributed secure state estimation has received increasing
+tion and sustainability of systems by interacting with physical                    attentions, see [17]–[19], there are still lack of effective meth-
+infrastructures, but are inherently vulnerable to eavesdrop-                       ods to resist malicious attacks. Specifically, due to the limited
+ping [1]–[4] and malicious attacks, especially over sensor                         power and low capacity of sensors, some existing intrusion
+communication networks [5], [6]. In the past decade, the cyber                     detection methods are not applicable to the wireless sensors,
+security accidents have occurred frequently, such as the Stux-                     which can not endure expensive computationally. However,
+Net worm on SCADA system [7] and the hack on Ukrainian                             with the development of CPS, the distributed framework inev-
+power grid [8], [9], which has serious impacts on national                         itably has more extensive applications in those complicated
+economy, social security and even human life security. Thus,                       environments when compared with the centralized framework.
+it is important and urgent to ensure the security of communica-                    Simultaneously, the security situation in distributed frame-
+tion layer in CPS, which has counted a great deal and has                          work confronts greater challenges due to the inherent coupling
+aroused much attentions from the academia and engineering
+                                                                                   among sensors. Therefore, it is necessary to study the distrib-
+                                                                                   uted secure state estimation and propose more effective
+   Manuscript received March 30, 2020; revised August 30, 2020; accepted
+September 28, 2020. Date of publication October 9, 2020; date of current ver-
+                                                                                   defense countermeasures against attacks.
+sion September 16, 2021. This work was supported in part by the National              In this paper, we investigate the issue of distributed state
+Natural Science Foundation of China under Grants 61973123 and 61673177,            estimation suffered from FDI attacks. Considering the confi-
+in part by the projects sponsored by the development fund for Shanghai tal-
+ents, in part by the Shanghai Natural Science Foundation under Grant
+                                                                                   dentiality of attacks, a class of linear attack is launched on the
+18ZR1409700, in part by the Programme of Introducing Talents of Discipline         communication network between sensors with a certain proba-
+to Universities (the 111 Project) under Grant B17017, and in part by the Fun-      bility. Here, we propose a detector based on Kullback-Leibler
+damental Research Funds for the Central Universities. Recommended for
+acceptance by Dr. Rongxing Lu. (Corresponding author: Wen Yang.)
+                                                                                   (K-L) divergence to judge whether the received data is mali-
+   The authors are with the Key Laboratory of Advanced Control, and                cious. The K-L divergence, so called relative entropy, can
+Optimization for Chemical Processes, East China University of Science, and Tech-   compute the distance between two probability density func-
+nology, Shanghai 200237, China (e-mail: weny@ecust.edu.cn; 330867609@qq.
+com; 2572553783@qq.com).
+                                                                                   tions applied in anomaly detection in recent years. It is charac-
+   Digital Object Identifier 10.1109/TNSE.2020.3029861                             terised with a high sensitivity to incipient faults [20], and is
+                         2327-4697 ß 2020 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                       See https://www.ieee.org/publications/rights/index.html for more information.
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+YANG et al.: DISTRIBUTED SECURE STATE ESTIMATION UNDER STOCHASTIC LINEAR ATTACKS                                                                                   2037
+
+
+
+                                                                                    Consider the following discrete linear time-invariant system:
+
+                                                                                                    xðk þ 1Þ ¼ AxðkÞ þ vðkÞ
+                                                                                                                                               (1)
+                                                                                                     yi ðkÞ ¼ H i xðkÞ þ vi ðkÞ;
+                                                                                 where xðkÞ 2 Rm is the system state, yi ðkÞ 2 Rm is the mea-
+                                                                                 surement of sensor i, Hi is the measurement matrix of sensor
+                                                                                 i, A 2 Rmm is the system matrix, vðkÞ and ni ðkÞ are zero-
+                                                                                 mean i.i.d Gaussian noises with covariances Q > 0 and Ri >
+                                                                                 0, respectively. The initial state x0 is zero-mean Gaussian
+                                                                                 with covariance matrix P0 and independent of vðkÞ and ni ðkÞ
+                                                                                 for all k  0.
+                                                                                    We utilize a directed graph G ¼ ðV; EÞ to model the sensor
+Fig. 1. The schematic of the secure distributed estimation under malicious       network with a set of nodes V ¼ 1; 2; . . . ; n and edges E 
+attacks. .                                                                       V  V, which denotes sensors and the communication links,
+                                                                                 respectively. The edgeði; jÞ means that the data can be trans-
+still capable of applying in non-Gaussian scenarios which                        mitted through the link from sensors j to its neighboring sen-
+inspires us to investigate it and paves the way for the applica-                 sor i for all j 2 N i , which defined as N i ¼ fj : ði; jÞ 2 Eg
+tion of security state estimation strategies to a wider range of                 indicating the in-neighbors of the ith sensor. Let di ¼ jN i j be
+scenarios in the future.                                                         the number of in-neighbor of sensor i. Similarly, N   e i ¼ fj :
+   The main results in this literature are summarized as below.                  ði; jÞ 2 Eg denotes the out-neighbors of sensor i which can
+    1) We design a detector based on K-L divergence to distin-                   receive data from the ith sensor.
+       guish the tampered data under a linear integrity attack
+       on the communication network, which has a lighter                         B. Distributed Estimator
+       impact on healthy system performance than the typical
+       chi-squared detection strategy.                                              In our previous works [21], we consider a distributed state
+    2) We establish a sufficient condition to guarantee the con-                 estimator based on the innovation for sensor i to fuse the infor-
+       vergence of the mean-squared error covariance under                       mation:
+       linear attacks.                                                                                                            X
+    3) We provide a method to choose the critical threshold of                        x^i ðk þ 1Þ ¼ A^
+                                                                                                     xi ðkÞ þ K ip ðkÞ½zi ðkÞ þ "   zj ðkÞ;   (2)
+                                                                                                                                              j2N i
+       the K-L divergence based hypothesis test, and a strategy
+       to deal with the scenario when the attacker knows the                       Here, zi ðkÞ is defined as the innovation sequence of ith sen-
+       detecting scheme of the estimator and tries to launch                     sor
+       the attack with goal of keeping its stealthy.
+   The remainder of the paper is organized as follows.                                                    zi ðkÞ ¼ yi ðkÞ      H i x^i ðkÞ;                        (3)
+Section II introduces the problem framework. Section III pro-                    and let the consensus gain " range in ð0; 1=DÞ with D ¼
+vides convergence analysis of MSEC under a class of linear                       maxðdi Þ. Note that x^i ðkÞ is the estimate of ith sensor at time
+integrity attack. Section III-B investigates the critical thresh-                step k, and K ip ðkÞ is the estimator gain.
+old for rejecting the null hypothesis of the test. In section IV,                   Then, we drive the optimal gain K ip ðkÞ of the proposed dis-
+numerical examples are provided to demonstrate all the devel-                    tributed estimator (2). Firstly, the mean-squared error covari-
+oped results. Section V draws conclusions.                                       ance (MSEC) of ith sensor is defined as
+   Notation: N represents the positive integer, R is the set of
+                                                                                                           h                            i
+real numbers, and set Rk be the k dimensional Euclidean space.                            Pi ðk þ 1Þ ¼ E fxðk þ 1Þ x^i ðk þ 1ÞgfgT ;           (4)
+diagðAi Þ represents a block diagonal matrix with main diago-
+nal block equalling to Ai . jAj refers to the cardinality of a set
+                                                                                   Lemma 1: Given the system parameters ", by minimizing
+A. The Kronecker product of A and B is A  B. Similarly, the
+                                                                                 the MSEC Pi ðkÞ, the optimal estimator gain is obtained
+Hadamard product for A and B is A  B. 1 denotes a vector
+whose elements equal to one. I denotes the identity matrix. In                                               Kpi ðkÞ ¼ ACM 1 ;                                     (5)
+order to simplify the symmetrical notation, ðXÞY ðÞT equals
+ðXÞY ðXÞT , and ðXÞðÞT equals ðXÞðXÞT .The notation E½                        where
+represents expectation, PrðÞ refers to probability, trðÞ denotes                             X                              X
+the trace of a matrix.                                                                M ¼"             Hr Pr;i ðkÞHi T þ "           Hi Pi;s ðkÞH s T þ Ri
+                                                                                               r2N i                         s2N i
+                                                                                                                          X
+                                                                                                                     2
+                     II. SYSTEM ARCHITECTURE                                                 þ Hi Pi ðkÞHi þ " T
+                                                                                                                                   ðHr Pr;s ðkÞHs T þ Rr;s Þ
+                                                                                                                         s;r2N i
+A. System Model                                                                                               X
+  The schematic diagram of the secure distributed estimation                           C ¼Pi ðkÞHiT þ "      Pi;r ðkÞHrT ;            i; s; r ¼ 1; 2; . . . ; n:
+                                                                                                       r2N i
+under malicious attacks is illustrated in Fig. 1.
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+2038                                                       IEEE TRANSACTIONS ON NETWORK SCIENCE AND ENGINEERING, VOL. 8, NO. 3, JULY-SEPTEMBER 2021
+
+
+
+   Proof: See Appendix A.                                       &                      adopt the stochastic strategy that launches the attack with a
+   Remark 1: In addition, to derive the optimal estimator gain                         fixed probability q. What’s more, the linear transformation of
+Kpi ðkÞ, we need the cross-covariance Pr;s ðkÞ, Pr;i ðkÞ, Pi;s ðkÞ                     the data would not break the statistical distribution type of the
+ðr 2 N i ; s 2 N j Þ. The MSEC between sensor i and sensor                             data, which enable the attack to cheat the false data detector
+j is:                                                                                  based on the distribution form and degrade the estimation per-
+                                            X                                          formance. Further, the stochastic linear attack might be much
+Pi;j ðk þ 1Þ ¼ APi;j ðkÞAT þ Q þ Kpi ðkÞð"      Hi Pi;s ðkÞHsT                         easier and more economical to implement in real applications.
+                                                          s2N j                        Thus, motivated by the aforementioned observations, we focus
+                         X                                                   T         on the stochastic linear attack strategy in this paper.
+                   þ"           Hr Pr;j ðkÞHjT þ Hi Pi HiT þ Ri ÞKpj ðkÞ
+                        r2N i
+                                         X                         T
+                                                                                       D. Detection Model
+                      AðPi;j HjT þ "             Pi;s ðkÞHsT ÞKpj ðkÞ
+                                                                                          Now we have introduced the healthy system model and the
+                                         s2N j
+                                                X                                      attack model. In what follows, we propose a distributed estima-
+                      Kpi ðkÞðHi Pi;j þ "               Hr Pr;j ðkÞÞAT                 tor with a false-data detector for the considered system to resist
+                                                r2N i                                  the attacks.
+                                   X X                                       T
+                        2                                                                 Definition 1: (Kullback-Leibler divergence) [24]. The K-L
+                   þ " Kpi ðkÞ                  ðHr Pr;s HsT þ Rr;s ÞKpj ðkÞ
+                                  r2N i s2N j                                          divergence is a measure of difference between two probability
+                                                                                       density functions(PDFs). For the two random sequences zðkÞ
+where i; j ¼ 1; 2; . . . ; n.                                                          and z~ðkÞ, with joint PDFs fz and fz~, respectly, the K-L diver-
+  Then, we introduce the following assumptions,                                        gence between zðkÞ and z~ðkÞ is defined as:
+  Assumption 1: The graph G is strongly connected.                                                                       Z
+  Assumption 2: ðA; Q1=2 Þ is stabilizable.                                                                                        f ðzÞ
+                                                                                                    KLDðfez k fz Þ ¼             ln ez      ðzÞdz             (9)
+  With the above assumption, similar to the work in [22], we                                                              R dz     fz ðzÞez
+assume that the system starts from the steady-state Pi ð0Þ ¼ Pi .
+                                                                                       where lnðÞ is the natural logarithm.
+C. Attack Model                                                                           The K-L divergence is widely applied to measuring the dis-
+                                                                                       tance between two PDFs, including face recognition [25],
+   In this subsection, we assume that the attackers are capable                        information thermodynamics [26], and signal detection [27].
+of intercepting and modifying the transmitted data, which is                           It is easily seen that KLDðfez k fz Þ ¼ 0 if and only if fez ¼ fz .
+similar to the attack model used in man-in-the-middle                                  In addition, the K-L divergence is non-symmetric, i.e.,
+attacks [23]. Thus, the transmitted data is modified as                                KLDðfez k fz Þ 6¼ KLDðfz k fez Þ.
+                                                                                          Lemma 2: The innovation sequence zi ðkÞ of the distributed
+                            z~i ðkÞ ¼ fi;k ðzi ðkÞÞ;                             (6)
+                                                                                       estimator has a steady-state Gaussian distribution N ð0; Szi Þ,
+where the real innovation is zi ðkÞ and the modified innovation                        where Szi ¼ Hi Pi ðkÞHiT þ Ri , and E½zi zTj  ¼ 0; 8i 6¼ j.
+is z~i ðkÞ, fi;k ðÞ is an arbitrary function.                                            Thus, the K-L divergence of the attacker modified innova-
+    In this case, we focus on the linear attack strategy that fi;k ðÞ                 tion with respect to the normal innovation is capable of being
+is a linear transformation of the innovation zi ðkÞ, with a cer-                       utilized in detecting the malicious attacks. Consider the
+tain probability. Let ’i;j ðkÞ; j 2 N i indicate whether the                           hypothesis test as follows,
+attack launched on the edge ði; jÞ, i.e.,                                                                                               H
+                                                                                                       zi ðkÞ ¼ KLDðfze k fzi Þ6H01 d;                       (10)
+                                                                                                                            i
+                    1; if the edgeði; jÞ is attacked; j 2 N i ;
+    ’ij ðkÞ ¼                                                   ; (7)
+                    0; otherwise;                                                      where the null hypothesis H0 indicates that the received inno-
+                                                                                       vation is normal while H1 is under attacks. If the K-L diver-
+where the attack probability Prð’i;j ðkÞ ¼ 1Þ ¼ q, and ’i;j ðkÞ                        gence exceeds a certain threshold d, the detector will be
+is independent of ’r;s ðkÞ while ði; jÞ 6¼ ðr; sÞ.                                     triggered and the data will not be used to fuse. The following
+   Then, we rewrite (6) as                                                             K-L divergence based detector is designed as,
+                                                                                                                   
+       z~i ðkÞ ¼ ’ij ðkÞ½Tk zi ðkÞ þ bi ðkÞ þ ð1           ’ij ðkÞÞzi ðkÞ                                           1; zi ðkÞ < d;
+                                                                                                        g ij ðkÞ ¼                               (11)
+              ¼ ½’ij ðkÞðTk        IÞ þ Izi ðkÞ þ ’ij ðkÞbi ðkÞ                 (8Þ                                 0; otherwise:
+
+                                                                                          Remark 3: This decision rule, however, requires the defini-
+where Tk 2 Rmm is an arbitrary attack matrix, and bi ðkÞ 2                            tion of a critical threshold d for rejecting the null hypothesis.
+Rm is zero-mean white Gaussian sequence independent of                                 Unlike the Chi-square test, there is no universal way for K-L
+zi ðkÞ with covariance Sbi > 0.                                                        divergence to select thresholds. Some previous works approxi-
+    Remark 2: As a smart attacker, it generally aims to reduce                         mate the distribution of the K-L divergence as a x2 distribu-
+the estimation performance while simultaneously remaining                              tion under a strict assumption that the dimensions of the data
+stealthy to the detector. To keep the stealthy, the attacker would                     are mutually independent, or approximate it by Monte Carlo
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+YANG et al.: DISTRIBUTED SECURE STATE ESTIMATION UNDER STOCHASTIC LINEAR ATTACKS                                                                                 2039
+
+
+
+simulation with massive historical data. Obviously, these                              The error vector form can be derived by collecting all the
+methods are not satisfactory in the scenario of distributed                         estimation errors,
+secure state estimation. Hence, in section III-B, we will sim-
+plify the form of K-L divergence under Gaussian distribution,                                          eðk þ 1Þ ¼ GðkÞeðkÞ þ W ðkÞ;                             (15)
+which allows to obtain an appropriate threshold d with method                       where
+of multivariate analysis.
+   Now, we design a distributed estimator with K-L divergence                          GðkÞ ¼ In  A           diagðKpi ðkÞHi Þ         "diagðKpi ðkÞÞ½LðkÞ
+detector for each sensor under stochastic linear attacks as follows:                               FðkÞ  ðTk          Im Þ þ LðkÞ  Im diagðHi Þ
+                                                X
+   x^i ðk þ 1Þ ¼ A^xi ðkÞ þ K ip ðkÞ½zi ðkÞ þ "             zj ðkÞ:
+                                                    g ij ðkÞ~
+                                                        j2N i                           W ðkÞ ¼ fdiagðKpi ðkÞÞ þ "diagðKpi ðkÞÞ½FðkÞ  ðTk
+                                                                            (12)                       Im Þ þ LðkÞ  Im gyðkÞ þ f"diagðKpi ðkÞÞ
+   Note that g i;j ðkÞ is independent of g r;s ðtÞ when i 6¼ r, j 6¼ s                               ðFðkÞ  Im ÞgBðkÞ           1n  vðkÞ
+or k 6¼ t.
+   Definition 2: (Dynamic communication graph). A dynamic                                     2                                                           3
+communication graph describes the communication links                                                   0              l12 ðkÞ’12 ðkÞ      l1n ðkÞ’1n ðkÞ
+                                                                                           6            ..                    ..      ..          ..      7
+between each sensor with the detector decision. The Laplacian                       FðkÞ ¼ 4             .                     .         .         .      5
+matrix of the communication graph GðkÞ is defines as LðkÞ ¼                                       ln1 ðkÞ’n1 ðkÞ       ln2 ðkÞ’n2 ðkÞ             0
+½‘ij ðkÞ, with
+                                                                                     Let E½LðkÞ ¼ L with L ¼ ½ij , and E½FðkÞ ¼ L with
+                            g ij ðkÞ; if ði; jÞ 2 E; i 6¼ j;
+            ‘ij ðkÞ ¼                                                               L ¼ ½ij . Define the variance of lij ðkÞ and lij ðkÞ’ij ðkÞ as s 2ij
+                         0;           otherwise:
+                                                                                    and s 2ij , respectively, so we can obtain E½l2ij ðkÞ ¼ 2ij þ s 2ij ,
+                                                                                                               2
+                                                                                    and E½l2ij ðkÞ’2ij ðkÞ ¼ ij þ s 2ij . Define the modified algebraic
+                  III. PERFORMANCE ANALYSIS                                         Riccati equation for the proposed estimator as
+   In this section, we will investigate the stability of the pro-
+posed estimator with detector under the Assumption 1 and 2.                         P^ðk þ 1Þ ¼ fIn  A                 ^ i ðkÞHi Þ
+                                                                                                                   diagðK p                   "diagðKpi ðkÞÞ
+First of all, we define                                                                              ½L  ðTk   Im Þ þ L  Im diagðHi ÞgP^ðkÞfgT
+              eðkÞ , ½eT1 ðkÞ; eT2 ðkÞ; . . . ; eTn ðkÞT 2 Rnm ;                                           ^ i ðkÞÞ þ "diagðK
+                                                                                                    þ fdiagðK                            ^
+                                                                                                                              ^ i ðkÞÞ þ PðkÞ
+                                                                                                                   p                      p
+
+              vðkÞ ,      ½vT1 ðkÞ; vT2 ðkÞ; . . . ; vTn ðkÞT 2 Rnm ;                               ½L  ðTk         Im Þ þ L  Im gRfgT þ RðkÞ
+              BðkÞ ,      ½bT1 ðkÞ; bT2 ðkÞ; . . . ; bTn ðkÞT 2 Rnm ;                              þ f"diagðK^ i ðkÞÞðL  Im ÞgSB fgT þ 11T  Q
+                                                                                                               p
+                            h                                   i                                        n X
+                                                                                                         X   n
+        Pi ðk þ 1Þ , E ½xðk þ 1Þ                x^i ðk þ 1Þ½T ;                                  þ "2                                        ^ i ðkÞÞ
+                                                                                                                              ^ i ðkÞÞSB ðI j  K
+                                                                                                                 s 2ij ðIij  K
+                                                                                                                              p          i      p
+             P ðkÞ , E eðkÞeT ðkÞ :                                                                          i¼1 i¼1
+                                                                                                                                                                (16)
+                                                                                    where
+A. Convergence Analysis
+                                                                                                    X n n
+                                                                                                    n X
+   In the following, we aim to analysis the convergence prop-                         ^                                ^ i ðkÞ½ðTk
+                                                                                      PðkÞ ¼ "2          s 2ij fIij  ðKp                        Im ÞHj Þg
+erties of the proposed estimator with detector under stochastic
+                                                                                                    i¼1 j¼1
+linear attacks. It is worth noting that, the convergence proper-
+ties of the MSEC Pi ðkÞ cannot be analyzed directly with the
+                                                                                                                          ^ i ðkÞHj ÞgP^ðkÞfgT
+                                                                                                P^ðkÞfgT þ s 2ij fIij  ðKp
+stochastic variables g i;j ðkÞ and ’i;j ðkÞ. Hence, we find an                                    þ ðij                           ^ i ðkÞ½ðTk
+                                                                                                              ij ij Þ  ðfIij  ðK                  Im ÞHj Þg
+                                                                                                                                    p
+upper bound of the MSEC and analyze its convergence prop-
+                                                                                                   P^ðkÞfIij  ðK
+                                                                                                                 ^ i ðkÞHj Þg þ fI j  ðK^ i ðkÞHj Þg
+                                                                                                                                 T
+erties instead. The state estimation error of the sensor i is                                                      p              i       p
+                                                                                                                                           o
+                                                                                                     ^      j    ^                      T
+                                                                                                   P ðkÞfIi  ðKp ðkÞ½ðTk Im ÞHj Þg Þ ;
+                                                                                                                   i
+                ei ðkjk         1Þ ¼ x^i ðkjk     1Þ    xðkÞ:               (13)
+  For ease of notation, we rewrite ei ðkjk                           1Þ ¼ ei ðkÞ.
+According to (12), ei ðkÞ evolves as,                                                             X n n
+                                                                                                  n X
+                                                                                    RðkÞ ¼ "2                                ^ i ðkÞðTk
+                                                                                                               s 2ij fIij  ½K                Im ÞgRfgT
+                                                                                                                              p
+                                                                                                  i¼1 j¼1
+   ei ðk þ 1Þ ¼ Aei ðkÞ þ wðkÞ Kpi ðkÞðHi ei ðkÞ þ vi ðkÞÞ                                                   ^ i ðkÞgRfgT þ ðij
+                            X                                                                 þ s 2ij fIij  K p                               ij ij Þ
+                  "K ip ðkÞ   g ij ðkÞf½’ij ðkÞðTk IÞ þ I
+                                                                                                         ^ i ðkÞðTk
+                                                                                               ðfIij  ½K                                ^ i ðkÞgT
+                                                                                                                            Im ÞgRfIij  K
+                                    j2N i                                                                  p                               p
+                                                                                                                                                                   o
+                    ½H j ej ðkÞ þ vj ðkÞ þ ’ij ðkÞbj ðkÞg:                (14)                                             ^ i ðkÞðTk
+                                                                                                        ^ i ðkÞHj ÞgRfI j  ½K
+                                                                                              þ fIij  ðK
+                                                                                                                                                                 T
+                                                                                                                                                           Im Þg Þ ;
+                                                                                                          p            i       p
+
+
+
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+2040                                                        IEEE TRANSACTIONS ON NETWORK SCIENCE AND ENGINEERING, VOL. 8, NO. 3, JULY-SEPTEMBER 2021
+
+
+
+and Iij is a n  n dimensional matrix whose elements are zero                        converges to a unique limit P > 0 for an arbitrary but fixed
+expect the one in the ith row and the jth column that equals                         initial non-negative symmetric P^ð0Þ.
+one for all i; j. Similar to (5), one can easily find the MSEC                          Proof: See the Appendix C.                                   &
+Pi ðk þ 1Þ is minimized when K      ^ i ðkÞ ¼ K i ðkÞ, K i ðkÞ ¼                        Remark 4: As above defined, L and L includes detection
+                                     p          p        p
+AC~M ~ , yielding
+         1
+                                                                                     variables which depends on the threshold d. The results in
+             X                                  X                                    Theorem 1 show the relation of the convergence properties
+  ~ ¼"
+  M                 ri Hr Pr;i ðkÞHi T þ "            is Hi Pi;s ðkÞH s T          and the threshold d. It further illustrates that the choice of the
+            r2N i                              s2N i                                 threshold d is the key for resisting the hostile attacks effec-
+                    X                                                                tively in real applications, and we are going to investigate the
+           þ "2             is ri ðHr Pr;s ðkÞHs T þ Rr;s Þ
+                  s;r2N i
+                                                                                     threshold selection in next section.
+        þ Hi Pi ðkÞHi T þ Ri                                                         B. Attack Detection With the K-L Divergence
+                      X
+   C~ ¼ Pi ðkÞHiT þ "    is Pi;s ðkÞHrT ; i; s; r ¼ 1; 2; . . . ; n:                   In the following, we are going to investigate the critical
+                              s2N i
+                                                                                     threshold d with the method of multivariate analysis for reject-
+   Lemma 3: Consider the following algebraic Riccati equa-                           ing the null hypothesis of the test which takes the form of the
+                                     ^ i ðkÞ ¼ AC~M
+tion, define the following MSEC with K            ~ 1,                               K-L divergence.
+                                      p
+                                                                                        Lemma 4: The proposed test statistics based on K-L diver-
+ Xðk þ 1Þ ¼ fIn  A                diagðKpi ðkÞHi Þ                                  gence is related to the T 2 distribution and x2 distribution. For
+                                                                                     moderate window length, the K-L divergence is approxi-
+                       "diagðKpi ðkÞÞ½LðkÞ  FðkÞ  ðTk                Im Þ          mately subject to following distribution:
+                                                                T
+                    þ LðkÞ  Im diagðHi ÞgP ðkÞfg
+                                                                                                                               1 2
+                    þ f"diagðKpi ðkÞÞðLðkÞ  FðkÞ  Im ÞgSB fgT                                      KLD½fez ðzÞ k fz ðzÞ !    T
+                                                                                                                              2 l m;l m
+                    þ fdiagðKpi ðkÞÞ þ "diagðKpi ðkÞÞ½LðkÞ  FðkÞ                                                   1
+                                                                                                      þ                  1
+                                                                                                                                 x21mðmþ1Þ
+                     ðTk        Im Þ þ LðkÞ  Im gRfgT þ 11T  Q                                     2ðl 1Þ 1 1 ð2mþ1      2 Þ 2
+                                                                                                                                                                            (18)
+                                                                                                                          6l 7            mþ1
+
+
+  Then, with the initial condition Xð0Þ ¼ P^ð0Þ  0, when                               Proof: As discussed in Lemma 2, since innovation and
+^ i      ^ i ðkÞ, we have
+Kp ðkÞ ¼ K                                                                           tampered one are both subject to the Gaussian distribution, the
+                                                                                     K-L divergence of the tampered innovation f~z ðzÞ with respect
+           p
+
+
+                      E½Xðk þ 1Þ           P^ðk þ 1Þ; 8k:                           to the normal innovation f z ðzÞ can be rewritten as:
+
+                                                                                                            1
+   Proof: See Appendix B.                                  &                         KLD½fez ðzÞ k fz ðzÞ ¼ ðe  mz mz ÞT Sz 1 ðe            mz mz Þ
+   Now we have derived an upper bound of MSEC of proposed                                                   2|ﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄ {zﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄ}
+estimator with detector. Obviously, E½P ðkÞ converges cer-                                                                                 a
+
+tainly if P^ðkÞ converges as k approaches infinity.                                                                1        jSz j                       e z Þ m :
+                                                                                                                  þ ½lnð Þ þ trðSz 1 S                                  (19)
+   Then, in order to analyze the convergence properties of                                                         2        Sez
+P^ðkÞ, the following assumption is given,                                                                          |ﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄ{zﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄﬄ}
+   Assumption 3: For any sð0Þ that is independent of the pro-                                                                                b
+
+cess vpr and vpr , assume there exists a constant matrix Kci ,
+such that the following discrete-time stochastic system is                               If we regard the K-L divergence as the summation of two
+mean-square stable:                                                                  items and analyze them separately, we can obtain two test sta-
+                                                                                     tistics [28] that are applicable to the two kinds of tests as
+  sðk þ 1Þ ¼ fIn  A                  diagðKci Hi Þ      "diagðKci Þ                 follows.
+                                                                                        (1) The test on the means with unknown covariance in mul-
+                      ½L  ðTk Im Þ þ L  Im diagðHi Þ                                     tivariate case.
+                          Xn Xn
+                     þ"         ð½Ipr  ðKci ðTk Im ÞHr Þvpr                                        Sa ¼ 2la ¼ lðe
+                                                                                                                  mz              mz ÞT Sz 1 ðe
+                                                                                                                                              mz            mz Þ            (20)
+                            p¼1 r¼1
+
+                     þ ½Ipr  ðKci Hr Þvpr ÞgsðkÞ                            (17Þ
+                                                                                        Sa is the statistic of Hotelling’s T 2 -test for the means with
+where E½vpr ðkÞ ¼ 0, E½vpr ðkÞvTpr ðkÞ ¼ s pr , E½vpr ðkÞ ¼ 0,                    unknown covariance, whose distribution is indexed by two
+E½vpr ðkÞvTpr ðkÞ ¼ s pr .                                                          parameters, the degrees of freedom l 1 and the dimension
+  Theorem 1: Under Assumptions 1, 2 and 3, if fIn                                   m, and l is the window length of samples. The T 2 -statistic can
+A; diagðKci Hi Þ þ "diagðKci Þ½L  ðTk Im Þ þ L  Im g is                           be viewed as the sample standardized distance between the
+detectable and there exists a Kci such that In  A                                   observed sample mean vector and the hypothetical mean vec-
+diagðKci Hi Þ "diagðKci Þ½L  ðTk Im Þ þ L  Im diagðHi Þ                           tor. If the sample mean vector is notably distant from the nor-
+is Hurwitz stable, then P^ðkÞ is bounded for all k, and                              mal scenarios, we become suspicious of data being tampered.
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+YANG et al.: DISTRIBUTED SECURE STATE ESTIMATION UNDER STOCHASTIC LINEAR ATTACKS                                                                            2041
+
+
+
+
+Fig. 2. Random geometric network of n=50 sensors. .
+                                                                                Fig. 3. The performance of proposed estimator (the blue curves) tracking the
+                                                                                considered system (the red curve)..
+  (1) The test on the covariance matrix, whereas the means is
+      not specified.                                                               As mentioned above, the reason why this attack strategy can
+                                                                                cheat the detector is that inverting gaussian data with zero
+                                                                                mean will not change its mean and variance. In view of this
+           Sb ¼ 2ðl      1Þb                                                    characteristic, we propose a method to defend against such
+                          2                                    3
+                                                                                attacks. Simply, we add a constant bias D before transmitting
+                          6 jSz j              ezÞ            7          (21)   the innovation, and offset it after receiving,
+               ¼ ðl     1Þ4lnð Þ þ trðSz 1 S             m5
+                                ez
+                               S                                                     
+                                                                                         z_ j ðkÞ ¼ zj ðkÞ þ D; before transmisson;
+                                                                                                                                          (23)
+                                                                                         z~j ðkÞ ¼ z_ j ðkÞ D; after receicing;
+Sb is a modification of the likelihood ratio, which is approxi-
+mately distributed as x21mðmþ1Þ . Note that if and only if Sz ¼                 which allows to distinguish the deception attacks.
+e z , Sb ¼ 0, otherwise, 2Sb increases with the distance of S
+S                                                            ez                   Next section, We’ll give a numerical example to support it.
+                                                  2
+with respect to Sz . To better approximate the x1mðmþ1Þ distri-
+bution with moderate window length of samples,2 let                                                   IV. NUMERICAL EXAMPLE
+
+                               1                   2                               In this section, we are going to present the numerical exam-
+             Sb0 ¼ ½1                  ð2m þ 1        ÞSb               (22)   ples to illustrate the performance of the proposed estimator
+                          6l       7              mþ1
+                                                                                with the detector based on K-L divergence under stochastic
+  By combining Sa and Sb , we can derive                                        linear attacks.
+
+     KLD½fez ðzÞ k fz ðzÞ ¼ a þ b                                              A. Examples of Sensor Networks With KLD Based Detector
+        1 2                        1
+     !    T         þ                1
+                                                             x21mðmþ1Þ            Consider a random sensor network consisting of 50 sensors as
+       2 l m;l m        2ðl 1Þ 1 1 ð2mþ1               2       2
+                                                                                Fig. 2 shows. The parameters of considered system are as follows:
+                                           6l 7       mþ1Þ
+
+                                                             &                                                                  
+   Then, the proof is completed.                                                                  1:01    0              2hi 0
+   Without loss of generality, similar to chi-square detection,                            A¼                  ; Hi ¼               ;
+                                                                                                    0    1:01             0 2hi
+we only need to select the required a-level and window length                                                              
+                                                                                                  2 0              2g i 0
+to determine the detection threshold d in Eq. (10).                                        Q¼           ; Ri ¼                 ;
+   Besides, Guo et al. derived the worst case innovation based                                    0 2               0 2g i
+                                                                                                                       
+attack strategy, i.e., Tk ¼ I and bi ðkÞ ¼ 0, according to the                                    3 0              bi 0
+                                                                                           Tk ¼         ; Bi ¼              :
+K-L divergence [29]. Since the innovation is subject to zero-                                     0 3              0 bi
+mean Gaussian distribution, the attack strategy have no impact
+on the statistical characteristics of innovation, including the                 where hi ; g i ; bi 2 ð0; 1 for all i. In addition, the consensus gain
+mean and variance. Therefore, it results in that the averaged                   " ¼ 0:2, and let the attack probability be Prð’i;j ðkÞ ¼ 1Þ ¼ 0:6.
+MSEC is maximized in the centralized framework without                             To better approximate the distribution functions of f~z ðzÞ,
+triggering the detector. However, in the distributed frame-                     we set the moving window length l ¼ 30 with a target a-level
+work, the results in [29] might not be held, while the attack                   of 0.05, which indicates the critical value d ¼ 0:39 according
+strategy still can cheat the K-L divergence based detector,                     to Eq. (18). Fig. 3 shows that the 50 sensors (blue curves) track
+thus we conduct further research on it in the following.                        the system state (red curve) well over time.
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+2042                                                    IEEE TRANSACTIONS ON NETWORK SCIENCE AND ENGINEERING, VOL. 8, NO. 3, JULY-SEPTEMBER 2021
+
+
+
+                                                                                                                     TABLE I
+
+
+
+
+Fig. 4. Comparison of estimation performance in different scenarios, where
+all the curves are obtained averaged over 100 runs..
+
+
+
+
+                                                                                   Fig. 6. (The numerical example of transmission bias strategy when Tk ¼ I
+                                                                                   and bi ðkÞ ¼ 0) estimation performance of K-L divergence with transmission
+                                                                                   bias D ¼ 3 and all the curves are obtained averaged over 100 runs. .
+Fig. 5. Comparison of K-L divergence detector and Chi-square detector in
+different scenarios, where all the curves are obtained averaged over 100 runs. .
+                                                                                                                     TABLE II
+   Moreover, to verify the effectiveness of the proposed detec-
+tor, we define an index, the averaged MSEC, to measure the
+estimation performance of the estimator:
+
+                                   1X n
+                        JðkÞ ¼           trðPi ðkÞÞ:
+                                   n i¼1
+
+   Fig. 4 illustrates the estimation performance for the given
+threshold. During time interval [0,100], the proposed estima-
+tor runs the consensus-based Kalman filter and enter into a
+steady state quickly. The stochastic integrity attack begin to                     that the K-L divergence detector has almost no effect on system
+launch at 100 time step. the blue plus-mark line, the red dot-                     performance when there is no attack.
+mark line, the green dash line, the brown line corresponds to                         Finally, we give a numerical example to support the trans-
+the MSEC under linear attack with detector, attack without                         mission bias strategy in Section III-B. We set the same param-
+detector, no attack without detector, and no attack with detec-                    eters as mentioned above and the bias D ¼ 3. From Fig. 6, in
+tor, respectively.                                                                 the absence of transmission bias, the worst case innovation
+   Furthermore, to compare the detection performance with the                      based linear attack can keep stealthy, but once there is the
+x2 detector, we consider the identical system parameters men-                      transmission bias, the estimation error covariance is greatly
+tioned above for both types of detector. From Fig. 5, when the                     reduced. Further, from Table II, it can significantly reduce the
+system is attacked, both detectors can reduce the estimation error                 rate of false negatives, for which the bias makes the attack
+covariance effectively. However, when the system is not                            more obvious and facilitates detection by the detector.
+attacked, the KLD one possesses the lower estimation error
+covariance than the other one. As Table I shows, although the
+                                                                                   B. Examples of Vehicle Tracking
+false-negative rate of KLD detector is a little bit higher than the
+Chi-squared one, the false-positive rate of the former is far more                   In a two-dimensional space, we conduct a vehicle moving
+less than the latter, which leads to the difference in estimation                  model according to the standard constant acceleration model
+performance as mentioned above. Moreover, it is worthy noting                      with zero acceleration as shown in Fig. 7. This example was
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+YANG et al.: DISTRIBUTED SECURE STATE ESTIMATION UNDER STOCHASTIC LINEAR ATTACKS                                                                             2043
+
+
+
+
+Fig. 7. Vehicle tracking testbed..                                               Fig. 9. The performance of proposed estimator (the blue curves) tracking the
+                                                                                 vehicle system (the red curve)..
+
+
+
+
+Fig. 8. The sensor network of vehicle tracking..
+
+
+conducted in [30]. The state of the vehicle includes its posi-
+                                                                                 Fig. 10. The performance of proposed estimator (the blue curves) tracking
+tion and speed. We assume a group of sensors (n=5) measure                       the vehicle system (the red curve)..
+and estimate the position of the vehicle, and send the esti-
+mates to its neighboring sensors over a sensor network
+(see Fig. 8). The parameters of vehicle moving model are as                                                   V. CONCLUSION
+follows:
+                                                                                    In this work, we have proposed a K-L divergence based detec-
+                                                                                 tor against stochastic linear attacks for distributed state estima-
+           2                         3                                           tion over WSNs, which combines the Mahalanobis distance as
+               1   0 0:5        0
+        60                                                                     well as the Burg matrix divergence between covariance. Under
+        6          1    0       0:5 7
+                                    7         2hi        0     0   0
+     A ¼6                           7; Hi ¼                            ;         some mild assumptions, we have provided a sufficient condition
+        40         0    1        0  5          0        2hi    0   0             for the MSEC convergence of the estimator with the proposed
+               0   0 0    1                                                      detector suffered from linear attacks. What’s more, we have also
+           2             3
+               2   0 0 0                                                         provided a critical threshold selection method from K-L diver-
+        60                                             
+                   2 0 07
+                                                                                 gence hypothesis test to obtain high estimation accuracy.
+        6                7         2g i             0
+     Q ¼6                7 i
+                           ; R ¼                          :                      Finally, we have used the simulation results to demonstrate that
+        40         0 2 05           0              2g i                          the K-L divergence works effectively in detecting malicious
+               0   0 0      2                                                    attacks and perform better than the Chi-square detector. In the
+                                                                                 future, we are going to further optimize the form of transmission
+                                                                                 bias, and investigate the impact of attacks on non-linear systems.
+where hi ; g i 2 ð0; 1 for all i. The other parameters are the
+same as those in the previous section.
+                                                                                                                APPENDIX A
+  Similar to Section IV-A, we simulate the vehicle tracking
+                                                                                                             PROOF OF LEMMA 1
+performance of sensors under four circumstances including
+under attack with detector, attack without detector, no attack                      The estimation error of the ith sensor is
+without detector, and no attack with detector. As Fig. 9
+shows, the sensors track the vehicle’s position as time                                            ei ðkjk    1Þ ¼ x^i ðkjk      1Þ    xðkÞ:
+evolves with considered detector. Fig. 10 shows the proposed
+K-L divergence based detector is effective in the practical                        Simplifying the notations, we write ei ðkjk                    1Þ ¼ ei ðkÞ.
+application.                                                                     According to Eq. (2), ei ðkÞ updates as,
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+2044                                                                        IEEE TRANSACTIONS ON NETWORK SCIENCE AND ENGINEERING, VOL. 8, NO. 3, JULY-SEPTEMBER 2021
+
+
+
+
+       ei ðk þ 1Þ ¼Aei ðkÞ þ wðkÞ Kpi ðkÞ½Hi ei ðkÞ þ vi ðkÞ                                            From Eq. (26), it is clear that Pi ðk þ 1Þ is minimized
+                              X
+                                                                                               (24)   when Kpi ðkÞ ¼ Kpi ðkÞ ¼ ACM 1 . Then, the proof is
+                     "Kpi ðkÞ    ½Hj ej ðkÞ þ vj ðkÞ;                                                finished.
+                                              j2N i
+
+
+Then, it follows from Eq. (24) that
+                                                                                                                                APPENDIX B
+ei ðk þ 1ÞeTj ðk þ 1Þ                                                                                                        PROOF OF LEMMA 3
+  ¼ Aei ðkÞeTj ðkÞAT þ wðkÞeTj ðkÞAT þ AeTi ðkÞwðkÞ                                                    We have proved that Xðk þ 1Þ is minimized when Kpi ðkÞ ¼
+                              X
+    þ wðkÞwT ðkÞ "K ip ðkÞ        ðH r er ðkÞ þ vr ðkÞÞ                                               Kp ðkÞ in Appendix A. Recall that the initial condition Xð0Þ ¼
+                                                                                                       i
+
+                                                  r2N i                                               P^ð0Þ  0. Then, we assume that E½XðkÞ                  P^ðkÞ, by induc-
+         eTj ðkÞAT          K ip ðkÞðH i ei ðkÞ þ vi ðkÞÞeTj ðkÞAT                                   tion, we have
+                          X
+           "K ip ðkÞ             ðH r er ðkÞ þ vr ðkÞÞwT ðkÞ                    K ip ðkÞ
+                         r2N i
+                                                                         X                                           h                             i
+         ðH i ei ðkÞ þ vi ðkÞÞwT ðkÞ                    "Aei ðkÞð              ðeTs ðkÞH Ts          E½Xðk þ 1Þ ¼ E GðkÞXðkÞGðkÞT þ W ðkÞW ðkÞT
+                                                                        s2N j                                        h                               i
+                                                                                                                  ¼ E GðkÞE½XðkÞGðkÞT þ W ðkÞW ðkÞT
+                     p ðkÞ
+        þ vTs ðkÞÞÞK jT                      Aei ðkÞðeTj ðkÞH Tj þ vTj ðkÞÞ                                          h                             i
+                                        X
+         K jT                                                                                                      E GðkÞP^ðkÞGðkÞT þ W ðkÞW ðkÞT
+            p ðkÞ          "wðkÞ                                         p ðkÞ
+                                                ðeTs ðkÞH Ts þ vTs ðkÞÞK jT
+                                        s2N j                                                                    ¼ E½fIn  A          diagðKpi ðkÞHi Þ     "diagðKpi ðkÞÞ
+           wðkÞðeTj ðkÞ H Tj þ vTj ðkÞÞK jT
+                                         p ðkÞ þ K p ðkÞ
+                                                   i
+                                                                                                                     ½LðkÞ  FðkÞ  ðTk Im Þ þ LðkÞ  Im diagðHi Þg
+             X
+         ½"   ðH r er ðkÞ þ vr ðkÞÞ þ ðH j ej ðkÞ þ vj ðkÞÞ                                                        P^ðkÞfgT  þ E½fdiagðK i ðkÞÞ þ "diagðK i ðkÞÞ
+                                                                                                                                                     p                     p
+               r2N i
+               X                                                                                                     ½LðkÞ  FðkÞ  ðTk          Im Þ þ LðkÞ  Im gRfgT 
+                                 T
+         ½"           ðes ðkÞ                                                   p ðkÞ:
+                                     H Ts þ vTs ðkÞÞ þ ðeTj ðkÞH Tj þ vTj ðkÞÞK jT                                 þ E½f"diagðKpi ðkÞÞðLðkÞ  FðkÞ  Im ÞgSB fgT 
+               s2N j
+                                                                                                                    þ 11T  Q
+                                                                                               (25)
+                                                                                                                 ¼ fIn  A       diagðKpi ðkÞHi Þ        "diagðKpi ðkÞÞ
+  As Pi;j ðkÞ ¼ E½ej ðkÞeTj ðkÞ, one has                                                                            ½L  ðTk       Im Þ þ L  Im diagðHi ÞgP^ðkÞfgT
+                                                                           X
+Pi;j ðk þ 1Þ ¼ APi;j ðkÞAT þ Q þ Kpi ðkÞð"                                          Hi Pi;s ðkÞHsT                  þ fdiagðKpi ðkÞÞ þ "diagðKpi ðkÞÞ½L  ðTk                  Im Þ þ L
+                                                                           s2N j
+                                                                                                                                  T
+                                                                                                                     Im gRfg þ f"diagðKpi ðkÞÞðL  Im ÞgSB fgT
+                                 X                                                             T                         Xn Xn n
+                         þ"              Hr Pr;j ðkÞHjT þ Hi Pi HiT þ Ri ÞKpj ðkÞ                                   þ "2         s 2ij fIij  ðKpi ðkÞ½ðTk Im ÞHj Þg
+                                 r2N i                                                                                     i¼1 i¼1
+                                                         X
+                            AðPi;j HjT þ "
+                                                                                 T
+                                                                 Pi;s ðkÞHsT ÞKpj ðkÞ                                P^ðkÞfgT þ s 2ij fIij  ðKpi ðkÞHj ÞgP^ðkÞfgT
+                                                        s2N j                                                       þ ðij     ij ij ÞðfIij  ðKpi ðkÞ½ðTk      Im ÞHj ÞgP^ðkÞ
+                                                                X
+                            Kpi ðkÞðHi Pi;j þ "                         Hr Pr;j ðkÞÞA      T
+                                                                                                                     fIij  ðKpi ðkÞHj Þg þ fIij  ðKpi ðkÞHj ÞgP^ðkÞ
+                                                                                                                                             T
+
+                                                                r2N i                                                                                     T
+                                                                                                                                                            o
+                                                X X                                            T
+                                                                                                                     fIij  ðKpi ðkÞ½ðTk Im ÞHj Þg Þ þ 11T  Q
+                         þ "2 Kpi ðkÞ                           ðHr Pr;s HsT þ Rr;s ÞKpj ðkÞ                                       (
+                                                                                                                           Xn Xn
+                                              r2N i s2N j
+                                                                                                                    þ "2             s 2ij fIij  ½Kpi ðkÞðTk Im ÞgRfgT
+                                                                                                                           i¼1 i¼1
+when i ¼ j, we can obtain
+                                                                                                                    þ s 2ij fIij  Kpi ðkÞgRfgT þ ðij        ij ij Þ
+                                                                                                                                                                           T
+ Pi ðk þ 1Þ ¼ APi ðkÞAT þ Q                                ACM 1 C T AT                                              ðfIij  ½Kpi ðkÞðTk        Im ÞgRfIij  Kpi ðkÞg
+                                                                                                                                                                                 T
+                                                                                                                                                                                      o
+                          þ ½Kpi ðkÞ             ACM 1 M½Kpi ðkÞ                     ACM 1 T ;                    þ fIij  ðKpi ðkÞHj ÞgRfIij  ½Kpi ðkÞðTk              Im Þg Þ
+                                                                                               (26)                        n X
+                                                                                                                           X n
+where                                                                                                               þ "2             s 2ij ðIij  Kpi ðkÞÞSB ðIij  Kpi ðkÞÞ
+                                                                                                                           i¼1 i¼1
+                   X                                        X
+   M¼"                    Hr Pr;i ðkÞHi T þ "                      Hi Pi;s ðkÞH s T þ Ri                          ¼ P^ðk þ 1Þ:                                                   (27)
+                  r2N i                                    s2N i
+                                                       X
+                                                  2
+                þ Hi Pi ðkÞHi þ "        T
+                                                                ðHr Pr;s ðkÞHs T þ Rr;s Þ
+                                                      s;r2N i
+                                        X
+       C ¼ Pi ðkÞHiT þ "      Pi;r ðkÞHrT ;                         i; s; r ¼ 1; 2; . . . ; n:          Thus, we obtain E½Xðk þ 1Þ              P^ðk þ 1Þ.
+                        r2N i
+
+
+
+
+        Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+YANG et al.: DISTRIBUTED SECURE STATE ESTIMATION UNDER STOCHASTIC LINEAR ATTACKS                                                                              2045
+
+
+
+                             APPENDIX C                                           P^2 ðkl Þ ¼ minfIn  A            diagðKpi ðkÞHi Þ      "diagðKpi ðkÞÞ
+                                                                                             Kpi ðkÞ
+                         PROOF OF THEOREM 1
+   Under Assumption 3, we can find a constant matrix Kci such                                 ½L  ðTk          Im Þ þ L
+that the system is mean-square stable. By substituting Kci into                               Im diagðHi ÞgP^2 ðkl 1 ÞfgT
+Eq. (16), we have
+                                                                                             þ fdiagðKpi ðkÞÞ           "diagðKpi ðkÞÞ½L  ðTk         Im Þ
+                                                                                             þ L  Im diagðHi ÞgRfgT þ RKpi ðkÞ
+ P^c ðk þ 1Þ ¼ fIn  A         diagðKci Hi Þ
+                                                                                             þ f"diagðKpi ðkÞðL  Im ÞgSB fgT þ P 2 ðkl 1 Þ
+                   "diagðKci Þ½L  ðTk             Im Þ
+                                                                                                       n X
+                                                                                                       X n
+
+                þ L  Im diagðHi ÞgP^c ðkÞfgT                                              þ "2                s 2ij ðIij  Kpi ðkÞÞSB ðÞT þ 11T  Q
+                                                                                                       i¼1 j¼1
+                         n X
+                         X n
+                þ"   2
+                                   fs ij ½Iij  ðKci ðTk       Im ÞHj Þ                 ¼ fIn  A               e i ðkÞHi Þ
+                                                                                                            diagðK                        e i ðkÞÞ
+                                                                                                                                    "diagðK
+                                                                                                                  p                         p
+                         i¼1 j¼1
+                                                                                              ½L  ðTk          Im Þ þ L  Im diagðHi ÞgP^2 ðkl 1 ÞfgT
+                þ s ij ½Iij  ðKci Hj ÞgP^c ðkÞfgT þ fdiagðKci Þ                                   e i ðkÞÞ                 e i ðkÞÞ½L  ðTk
+                                                                                             þ fdiagðK p                "diagðK p                      Im Þ
+                þ "diagðKci Þ½L  ðTk              Im Þ þ L  Im g                                                             T
+                                                                                             þ L  Im diagðHi ÞgRfg þ R ei ðkÞ
+                                                                                                                                        Kp
+                 RfgT þ Rc þ f"diagðKci ÞðL  Im ÞgSB fgT
+                                                                                                      e i ðkÞÞðL  Im ÞgSB fgT þ 11T  Q
+                                                                                             þ f"diagðKp
+                         n X
+                         X n
+                þ "2               s 2ij ðIij  Kci ÞSB ðIij  Kci Þ                                   n X
+                                                                                                       X n
+                                                                                             þ "2                             e i ðkÞÞSB ðÞT þ P 2 ðkl 1 Þ
+                                                                                                                 s 2ij ðIij  K
+                         i¼1 j¼1                                                                                               p
+                                                                                                       i¼1 j¼1
+                þ 11T  Q                                                                                        e i ðkÞHi Þ              e i ðkÞÞ
+                                                                                          fIn  A          diagðKp                 "diagðK p
+
+                                                                                              ½L  ðTk          Im Þ þ L  Im diagðHi ÞgP^1 ðkl 1 ÞfgT
+                                                                                                     e i ðkÞÞ
+                                                                                             þ fdiagðK                  "diagðKpi ðkÞÞ½L  ðTk         Im Þ
+                                                                                                       p
+                                                   T
+   Define MðkÞ, as MðkÞ , E½sðkÞsðkÞ . Of course, M satis-
+fies the following linear recursion,                                                         þ L  Im diagðHi ÞgRfgT þ R ei ðkÞ
+                                                                                                                                        Kp
+
+                                                                                                      e i ðkÞÞðL  Im ÞgSB fgT þ 11T  Q
+                                                                                             þ f"diagðKp
+                                                                                                       n X
+                                                                                                       X n
+                                                                                             þ "2                             e i ðkÞÞSB ðÞT þ P 1 ðkl 1 Þ
+                                                                                                                 s 2ij ðIij  Kp
+  Mðk þ 1Þ ¼ fIn  A               diagðKci Hi Þ       "diagðKci Þ½L                                   i¼1 j¼1
+
+
+                   ðTk       Im Þ þ L  Im diagðHi ÞgMðkÞfgT                           minfIn  A               diagðKpi ðkÞHi Þ      "diagðKpi ðkÞÞ
+                                                                                             Kpi ðkÞ
+                          n X
+                          X n
+                  þ "2              f½Ipr  ðKci ðTk       Im ÞHr Þs pr                      ½L  ðTk          Im Þ þ L  Im diagðHi ÞgP^1 ðkl 1 ÞfgT
+                          p¼1 r¼1
+                                                                                             þ fdiagðKpi ðkÞÞ           "diagðKpi ðkÞÞ½L  ðTk         Im Þ
+                                                           T
+                  þ ½Ipr  ðKci Hr Þs pr gMðkÞfg                         (28)              þ L  Im diagðHi ÞgRfg þ RKpi ðkÞT
+
+
+                                                                                             þ f"diagðKpi ðkÞÞðL  Im ÞgSB fgT þ 11T  Q
+                                                                                                       n X
+                                                                                                       X n
+                                                                                             þ "2                s 2ij ðIij  Kpi ðkÞÞSB ðÞT þ P 1 ðkl 1 Þ
+                                                                                                       i¼1 j¼1
+  According to [31], the above equation is stable, which
+implies that P^c ðkÞ is bounded and converges to a limit.                                    ^1
+                                                                                         ¼ P ðkl Þ:                                                         (29)
+   For all k, we testify p^ðkÞ increases monotonically under the
+zero initial condition, given the initial conditions, p^1 ðk0 Þ ¼ 0
+and p^2 ðk0 1Þ ¼ 0 and p^1 ðk þ 1Þ ¼ p^2 ðkÞ, p^2 ðk0 Þ  p^1 ðk0 Þ.                Since P^1 ðklþ1 Þ ¼ P^2 ðkl Þ, we have P^1 ðkl Þ P^2 ðkl Þ ¼
+For p^2 ðk0 Þ ¼ 0. Suppose that p^1 ðkÞ p^2 ðkÞ for k ¼                           P ðklþ1 Þ which indicates that P^ðkÞ is monotonically increas-
+                                                                                   1
+
+k0 ; k1 ;   ; kl 1 . According to above condition,                             ing with the zero initial condition, and limk!1 P^ðkÞ ! P.
+
+
+
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+2046                                                        IEEE TRANSACTIONS ON NETWORK SCIENCE AND ENGINEERING, VOL. 8, NO. 3, JULY-SEPTEMBER 2021
+
+
+
+   Next, we show that the above limit holds for initial condi-                                             i ðkÞ,
+                                                                                     the eigenvalues with Kp
+tion P^ð0Þ ¼ N0 > P. Indeed, we have
+                                                                                           i ½fIn  A             i ðkÞHi Þ
+                                                                                                             diagðK                         i ðkÞÞ
+                                                                                                                                     "diagðK
+  P^N0 ðk þ 1Þ         P                                                                                           p                       p
+
+                                                                                             ½L  ðTk Im Þ þ L  Im diagðHi ÞgfgT
+       ¼ minfIn  A               diagðKpi ðkÞHi Þ      "diagðKpi ðkÞÞ
+          Kpi ðkÞ                                                                                Xn X n
+                                                                                            þ "2                        i ðkÞ½ðTk Im ÞHj ÞgfgT
+                                                                                                        fs 2ij fIij  ðK p
+          ½L  ðTk          Im Þ þ L  Im diagðHi ÞgP^N0 ðkÞfgT                                 i¼1 i¼1
+
+                                                                                            þ s 2ij fIij  ðKpi ðkÞHj ÞgfgT þ ðij          ij ij Þ
+         þ fdiagðKpi ðkÞÞ            "diagðKpi ðkÞÞ½L  ðTk            Im Þ
+                                                                                                                                                           T
+                                     ^ i ðkÞ þ R i ðkÞ                                     ðfIij  ðKpi ðkÞ½ðTk        Im ÞHj ÞgfIij  ðKpi ðkÞHj Þg Þ
+         þ L  Im diagðHi ÞgRfgT þ P Kp       Kp
+                                                                                            þ ðÞT g < 1:
+                 n X
+                 X n                                                                                                                                           (32)
+         þ "2                s 2ij ðIij  Kpi ðkÞÞSB ðÞT þ f"diagðKpi ðkÞ
+                  i¼1 j¼1
+
+          ðL  Im ÞgSB fgT            fIn  A             i ðkÞHi Þ
+                                                      diagðK p
+                                                                                       Thus, limk!1 P^ðkÞ ¼ P  0 holds for any initial condition
+                                                                                     and the proof is completed.
+                   i ðkÞÞ½L  ðTk
+            "diagðK                            Im Þ þ L  Im diagðHi Þg
+                    p
+
+          PðkÞfg    T             i ðkÞÞ
+                              fdiagðK p
+                                                         i ðkÞÞ
+                                                  "diagðKp
+                                                                                                                    REFERENCES
+                                                                                      [1] Z. Zheng, C. Yang, and W. Yang, “Resilience analysis of discrete-time
+          ½L  ðTk          Im Þ þ L  Im diagðHi ÞgRfgT                               networked system in the presence of information disclosure,” IEEE
+                                                                                          Access, vol. 7, pp. 180 147–180 154, 2019.
+                    i ðkÞðL  Im ÞgSB fgT
+            f"diagðK                                         RKpi ðkÞ                [2] W. Yang, Z. Zheng, G. Chen, Y. Tang, and X. Wang, “Security analysis
+                     p                                                                    of a distributed networked system under eavesdropping attacks,” IEEE
+                 n X
+                 X n                                                                      Trans. Circuits Syst. II: Exp. Briefs, vol. 67, no. 7, pp. 1254–1258,
+            "2                             i ðkÞÞSB ðÞT
+                             s 2ij ðIij  K                   P^K pi ðkÞ                 Jul. 2020.
+                                            p                                         [3] W. Gao, W. Yu, F. Liang, W. G. Hatcher, and C. Lu, “Privacy-preserving
+                  i¼1 j¼1
+                                                                                          auction for big data trading using homomorphic encryption,” IEEE Trans.
+        fIn  A                  i ðkÞHi Þ
+                           diagðK                       i ðkÞÞ
+                                                 "diagðK                                  Netw. Sci. Eng., vol. 7, no. 2, pp. 776–791, Apr.–Jun. 2020.
+                                 p                       p                            [4] W. Yang, D. Li, H. Zhang, Y. Tang, and W. X. Zheng, “An encoding
+                      Im Þ þ L  Im diagðHi ÞgðP^N0 ðkÞ PÞ
+                                                                                          mechanism for secrecy of remote state estimation,” Automatica,
+          ½L  ðTk                                                                       vol. 120, 2020, Art. no. 109116.
+                     X
+                     n X  n n                                                         [5] J. Lee, B. Bagheri, and H.-A. Kao, “A cyber-physical systems architec-
+          fgT þ "2                         i ðkÞ½ðTk Im Þ
+                              s 2ij fIij  ðK                                             ture for industry 4.0-based manufacturing systems,” Manuf. Lett., vol. 3,
+                                              p                                           pp. 18–23, 2015.
+                           i¼1 i¼1
+                                                                                      [6] A. Humayed, J. Lin, F. Li, and B. Luo, “Cyber-physical systems securi-
+          Hj ÞgðP^N0 ðkÞ         PÞfgT þ s 2ij fIij  ðKpi ðkÞHj Þg                   tyla survey,” IEEE Internet Things J., vol. 4, no. 6, pp. 1802–1831,
+                                                                                          Dec. 2017.
+          ðP^N0 ðkÞ        PÞfgT þ ðij
+                                                                                      [7] S. Karnouskos, “Stuxnet worm impact on industrial cyber-physical sys-
+                                                 ij ij ÞðfIij  ðKpi ðkÞ                tem security,” in Proc. 37th Annu. Conf. IEEE Ind. Electron. Soc., 2011,
+                                                                                          pp. 4490–4494.
+                     Im ÞHj ÞgðP^N0 ðkÞ        PÞfIij  ðKpi ðkÞHj Þg
+                                                                        T
+          ½ðTk                                                                       [8] D. U. Case, “Analysis of the cyber attack on the ukrainian power grid,”
+                                                                                          Electricity Inf. Sharing Anal. Center (E-ISAC), vol. 388, pp. 1–29, 2016.
+         þ fIij  ðKpi ðkÞHj ÞgðP^N0 ðkÞ            PÞfIij  ðKpi ðkÞ                [9] S. Soltan, M. Yannakakis, and G. Zussman, “React to cyber attacks on
+                              o                                                           power grids,” IEEE Trans. Netw. Sci. Eng., vol. 6, no. 3, pp. 459–473,
+          ½ðTk Im ÞHj ÞgT Þ :                                               (30)        Jul./Sep. 2018.
+                                                                                     [10] H. Zhang, P. Cheng, L. Shi, and J. Chen, “Optimal denial-of-service
+                                                                                          attack scheduling with energy constraint,” IEEE Trans. Autom. Control,
+                                                                                          vol. 60, no. 11, pp. 3023–3028, Nov. 2015.
+  Since,                                                                             [11] H. Zhang, Y. Qi, H. Zhou, J. Zhang, and J. Sun, “Testing and defending
+                                                                                          methods against dos attack in state estimation,” Asian J. Control,
+       fIn  A             i ðkÞHi Þ
+                     diagðK                          i ðkÞÞ
+                                              "diagðK                                     vol. 19, no. 4, pp. 1295–1305, 2017.
+                           p                          p
+                                                                                     [12] B. Chen, D. W. Ho, G. Hu, and L. Yu, “Secure fusion estimation for
+                Im Þ þ L  Im diagðHi ÞgPfgT
+        ½L  ðTk                                                                         bandwidth constrained cyber-physical systems under replay attacks,”
+                                                                                          IEEE Trans. Cybern., vol. 48, no. 6, pp. 1862–1876, Jun. 2017.
+            X n n
+            n X                                                                      [13] Y. Mo, R. Chabukswar, and B. Sinopoli, “Detecting integrity attacks on
+       þ "2                      i ðkÞ½ðTk Im ÞHj ÞgPfgT
+                  s 2ij fIij  ðK                                                         scada systems,” IEEE Trans. Control Syst. Technol., vol. 22, no. 4,
+                                  p
+             i¼1 i¼1                                                                      pp. 1396–1407, Jul. 2013.
+                                                                                     [14] F. Miao, M. Pajic, and G. J. Pappas, “Stochastic game approach for
+       þ s 2ij fIij  ðKpi ðkÞHj ÞgPfgT                                                 replay attack detection,” in Proc. 52nd IEEE Conf. Decis. Control,
+                                                                                          2013, pp. 1854–1859.
+       þ ðij       ij ij ÞðfIij  ðKpi ðkÞ½ðTk       Im ÞHj Þg                   [15] T. Shinohara, T. Namerikawa, and Z. Qu, “Resilient reinforcement in
+                                                                                          secure state estimation against sensor attacks with a priori information,”
+        PfIij  ðKpi ðkÞHj Þg þ fIij  ðKpi ðkÞHj ÞgP
+                               T                                                          IEEE Trans. Autom. Control, vol. 64, no. 12, pp. 5024–5038, Dec. 2019.
+                                                                                     [16] Y. Wang and H. Ishii, “Resilient consensus through event-based
+                                          o                                               communication,” IEEE Trans. Control Netw. Syst., vol. 7, no. 1,
+        fIij  ðKpi ðkÞ½ðTk Im ÞHj Þg Þ < P;
+                                        T
+                                                                              (31)        pp. 471–482, Mar. 2020.
+                                                                                     [17] W. Yang, Y. Zhang, G. Chen, C. Yang, and L. Shi, “Distributed filtering
+                                                                                          under false data injection attacks,” Automatica, vol. 102, pp. 34–44, 2019.
+
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+YANG et al.: DISTRIBUTED SECURE STATE ESTIMATION UNDER STOCHASTIC LINEAR ATTACKS                                                                               2047
+
+
+
+[18] Y. Chen, S. Kar, and J. M. Moura, “Resilient distributed estimation:                                  Wen Yang received the B.Sc. degree in mineral engi-
+     Sensor attacks,” IEEE Trans. Autom. Control, vol. 64, no. 9, pp. 3772–                                neering and the M.Sc. degree in control theory and
+     3779, Sep. 2019.                                                                                      control engineering from Central South University,
+[19] W. Yang, L. Lei, and C. Yang, “Event-based distributed state estimation                               Changsha, China, in 2002 and 2005, respectively,
+     under deception attack,” Neurocomputing, vol. 270, pp. 145–151, 2017.                                 and the Ph.D. degree in control theory and control
+[20] J. Zeng, U. Kruger, J. Geluk, X. Wang, and L. Xie, “Detecting abnormal                                engineering from Shanghai Jiao Tong University,
+     situations using the kullback–leibler divergence,” Automatica, vol. 50,                               Shanghai, China, in 2009. She is currently a Professor
+     no. 11, pp. 2777–2786, 2014.                                                                          with East China University of Science and Technol-
+[21] Y. Xia, W. Yang, and Z. Zhao, “Consensus-based filtering under false                                  ogy, Shanghai, China. She was a Visiting Student
+     data injection attacks,” Eur. J. Control, vol. 48, pp. 3–8, 2019.                                     with the University of California, Los Angeles, from
+[22] S. Wu, Z. Guo, D. Shi, K. H. Johansson, and L. Shi, “Optimal innovation-                              2007 to 2008. Her research interests include informa-
+     based deception attack on remote state estimation,” in Proc. Amer. Control   tion fusion, state estimation, network security, coordinated control, complex
+     Conf., 2017, pp. 3017–3022.                                                  networks, and reinforcement learning.
+[23] F. Callegati, W. Cerroni, and M. Ramilli, “Man-in-the-middle attack to
+     the https protocol,” IEEE Secur. Privacy, vol. 7, no. 1, pp. 78–81,
+     Jan. 2009.
+[24] T. M. Cover and J. A. Thomas, Elements of Information Theory. Hoboken,
+     NJ, USA: Wiley, 2012.                                                                                 Weijie Luo received the B.S. degree in automation in
+[25] Z. Huang, R. Wang, S. Shan, and X. Chen, “Face recognition on large-                                  2018 from the East China University of Science and
+     scale video in the wild with hybrid Euclidean-and-riemannian metric                                   Technology, Shanghai, China, where he is currently
+     learning,” Pattern Recognit., vol. 48, no. 10, pp. 3113–3124, 2015.                                   working toward the master’s degree in control theory
+[26] J. M. Parrondo, J. M. Horowitz, and T. Sagawa, “Thermodynamics of                                     and control engineering, under the advisement of
+     information,” Nat. phys., vol. 11, no. 2, pp. 131–139, 2015.                                          Prof. Wen Yang. His research interest is secure dis-
+[27] H. V. Poor, An Introduction to Signal Detection and Estimation. Berlin,                               tributed state estimation over wireless sensor network.
+     Germany: Springer Science & Business Media, 2013.
+[28] A. C. Rencher and W. F. Christensen, Methods of Multivariate Analysis,
+     3rd Edition, Hoboken, NJ, USA: Wiley, 2003.
+[29] Z. Guo, D. Shi, K. H. Johansson, and L. Shi, “Worst-case stealthy
+     innovation-based linear attack on remote state estimation,” Automatica,
+     vol. 89, pp. 117–124, 2018.
+[30] L. Shi, M. Epstein, and R. M. Murray, “Kalman filtering over a packet                                 Xinting Zhang received the B.S. degree in electrical
+     dropping network: A probabilistic approach,” in Proc. 10th Int. Conf.                                 engineering and automation from Zhejiang Univer-
+     Control, Autom., Robot. Vis., 2009, pp. 41–46.                                                        sity of Technology, Hangzhou, China, in 2018. She is
+[31] S. Boyd, L. El Ghaoui, E. Feron, and V. Balakrishnan, Linear Matrix                                   currently working toward the master’s degree in con-
+     Inequalities in System and Control Theory, vol. 15, Philadelphia, PA,                                 trol science and engineering with East China Univer-
+     USA: SIAM, 1994.                                                                                      sity of Science and Technology, Shanghai, China,
+                                                                                                           under the advisement of Prof. Wen Yang. Her
+                                                                                                           research interests are distributed filtering and security
+                                                                                                           under complex attacks.
+
+
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:31:36 UTC from IEEE Xplore. Restrictions apply.
+

@@ -1,0 +1,886 @@
+IEEE TRANSACTIONS ON CYBERNETICS, VOL. 53, NO. 11, NOVEMBER 2023                                                                                            7115
+
+
+
+
+                False Data-Injection Attack Detection
+             in Cyber–Physical Systems With Unknown
+                 Parameters: A Deep Reinforcement
+                         Learning Approach
+   Kecheng Liu, Hui Zhang , Ya Zhang , Senior Member, IEEE, and Changyin Sun , Senior Member, IEEE
+
+
+
+   Abstract—This article studies the detection of discontinuous                     Cyber attacks on CPSs can be divided into denial of ser-
+false data-injection (FDI) attacks on cyber–physical systems                     vice attacks [4], [5], [6]; false data-injection (FDI) attacks
+(CPSs). Considering the unknown stochastic properties of the                     [7], [8]; topological attacks [9], [10]; replay attacks [11], [12];
+process noise and measurement noise, deep reinforcement learn-
+ing is applied to designing an FDI attack detector. First, the                   etc. FDI attacks can attack all the layers of CPSs by com-
+discontinuous attack detection problem is modeled as a par-                      promising the measurements of sensors and degrading the
+tially observable Markov decision process (POMDP) and a neural                   system performance while bypassing defense mechanisms [13]
+network is used to explore the POMDP. In the network, sliding                    and have been widely studied. Some approaches have been
+observation windows which are composed of the offline fragment                   proposed to detecting FDI attacks. Manandhar et al. [14]
+historical data are used as the input. An approach to designing
+the reward in POMDP is provided to ensure the precision of                       designed a Euclidean detector to detect FDI attacks in
+the detection when there are even some state recognition errors.                 the smart grid. Liu et al. [15] developed a Bayesian
+Second, sufficient conditions on attack frequency and duration                   test for detecting the FDI attack at the packet level in
+to guarantee the applicability of the detector and the expected                  lossy one-way wireless relay networks by overhearing erro-
+estimation performance are further given. Finally, simulation                    neous packets from the source. Guan and Ge [16] and
+examples illustrate the effectiveness of the attack detector.
+                                                                                 Barboni et al. [17] designed distributed attack detectors
+   Index Terms—Attack detection, cyber–physical systems                          and distributed secure estimators for networked CPSs. A
+(CPSs), deep reinforcement learning, false data-injection (FDI)                  new summation detector that applies the current compromise
+attacks, partially observable Markov decision process (POMDP).
+                                                                                 information and collected historical information was proposed
+                                                                                 in [18]. Zhang and Venkitasubramaniam [19] studied the inter-
+                                                                                 play between FDI attacker and detector from a game-theoretic
+                          I. I NTRODUCTION
+                                                                                 framework. The residual-based χ 2 attack detector is a com-
+      YBER–PHYSICAL systems (CPSs) which integrate
+C     computing, sensing, communication, and control
+[1], [2], [3] cover a wide range of systems, including smart
+                                                                                 monly used FDI attack detection method. Chen et al. [20]
+                                                                                 proposed a new online detection method based on historical
+                                                                                 statistical information to compensate for system vulnerability.
+grids, smart factories, etc. Recently cyber attacks have been                    Li et al. [21] developed an FDI attack detector with multiple
+found in CPSs which make system control challenging. How                         sensors by extracting information from the trusted sensors.
+to improve the system robustness and prevent malicious                              The design of the alarm thresholds in the above-mentioned
+attacks from causing harmful influences on the systems have                      detectors requires specific prior knowledge, which cannot
+become topical issues in CPSs.                                                   be satisfied when some system parameters are unknown.
+                                                                                 Therefore, some new attack detection methods based on
+   Manuscript received 13 March 2022; revised 11 June 2022, 18 August
+2022, and 2 November 2022; accepted 17 November 2022. Date of publication        machine learning have been proposed to break the limita-
+13 December 2022; date of current version 17 October 2023. This work was         tion in recent years. James et al. [22] developed an FDI
+supported in part by the National Key Research and Development Program of        attack detection mechanism by combining wavelet transform
+China under Grant 2021ZD0112700; in part by the National Natural Science
+Foundation (NNSF) of China under Grant 61973082 and Grant 62233003;              and deep neural networks. Jiang et al. [23] designed attack
+and in part by the Natural Science Foundation of Jiangsu Province of China       detectors by adopting the convolutional neural network and
+under Grant BK20202006. This article was recommended by Associate Editor         the long short-term memory network. Zhang et al. [24]
+D. Zhao. (Corresponding author: Ya Zhang.)
+   Kecheng Liu, Ya Zhang, and Changyin Sun are with the School of                integrated the autoencoders into an advanced generative adver-
+Automation and the Key Laboratory of Measurement and Control of Complex          sarial network framework and proposed a detector that could
+Systems of Engineering, Ministry of Education, Southeast University, Nanjing     successfully detect anomalies under FDI attack by capturing
+210096, China (e-mail: realzhya@sina.com).
+   Hui Zhang is with the School of Automation, Southeast University,             the unconformity between abnormal and secure measurements.
+Nanjing 210096, China, and also with the High-Tech Department, Jiangsu           Kurt et al. [25] proposed a reinforcement learning-based detec-
+Automation Research Institute, Lianyungang 222061, China.                        tion model by making sample-by-sample decisions and online
+   Color versions of one or more figures in this article are available at
+https://doi.org/10.1109/TCYB.2022.3225236.                                       training. Van Wyk et al. [26] designed a cyber attack detector
+   Digital Object Identifier 10.1109/TCYB.2022.3225236                           by combining the deep learning and χ 2 detector for connected
+                      2168-2267 
+                                c 2022 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                    See https://www.ieee.org/publications/rights/index.html for more information.
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+7116                                                                               IEEE TRANSACTIONS ON CYBERNETICS, VOL. 53, NO. 11, NOVEMBER 2023
+
+
+
+and automated vehicles. It should be noted that the attack                        denote the conditional expectation and probability distribution
+detection methods in the above works can only detect the                          function of x under condition y, respectively. (·) and tr(·) denote
+existence of continuous attacks. Once an attack is detected,                      the spectral radius and the trace of matrix, respectively. vec(P)
+the detector finishes its detection. However, in many practical                   denotes a column vector obtained by spanning all columns of
+applications, attacks are intermittently injected into the system                 matrix P. | · | denotes the absolute value function. arg max(·)
+and the attacker should continuously detect attacks. How to                       denotes the arguments of the maxima function. x%y denotes
+detect discontinuous FDI attacks is still a complicated and                       the remainder of x divided by y.
+worth-considering problem.
+   This article studies the FDI attack detection of CPSs where                                        II. P ROBLEM F ORMULATION
+the statistical characteristics of the process noise and mea-
+                                                                                  A. System Model
+surement noise are unknown and the attacker intermittently
+injects attack signals into the system output measurement.                           Consider a CPS with system dynamics
+Since some system parameters are unknown, it is difficult to                                                   xt+1 = Axt + ωt
+determine the threshold in the χ 2 attack detector. In addition,
+in order to guarantee continuous state estimation the detector                                                    yt = Cxt + νt                              (1)
+of the system should not only detect the existence of attacks,                    where xt ∈       denotes the system-state vector, yt ∈ Rn
+                                                                                                    Rm
+but also judge whether the system is attacked at each step.                       denotes the measurement vector of the sensing nodes at
+Hence, this article designs a residual-based detection method                     time t. A ∈ Rm×m and C ∈ Rn×m represent the system
+with deep reinforcement learning. Considering the unknown                         matrix and measurement matrix, respectively. The process
+noises, we model the optimal decision of the detector as a                        noise ωt ∈ Rm is a zero-mean white noise with covariance
+partially observable Markov decision process (POMDP). It                          Wt = E[ωt ωtT ] > 0, and the measurement noise vt ∈ Rn is
+is challenging to solve POMDP by calculation [27], while                          a zero-mean white noise with covariance Vt = E[νt νtT ] > 0.
+deep reinforcement learning [28], [29] can effectively explore                    Meanwhile, νt is uncorrelated with both ωt and x0 .
+effective strategies in an uncertain environment. Therefore, we                      Assumption 1: The system matrix A is invertible.
+combine deep learning with model-free reinforcement learning                         Assumption 2: (A, C) is detectable.
+to deal with the discontinuous attack detection. In the train-                       Assumption 3: Wt and Vt are unknown while bounded.
+ing, the off-policy deep Q-learning [30] is applied, where the
+neural network in deep learning is adopted to approximately
+                                                                                  B. FDI Attack Model
+calculate the action-value function.
+   The main contributions of this article can be summarized                          This article considers discontinuous attacks, that is, the
+as follows.                                                                       attacker intermittently injects attacks into the system measure-
+   1) The attack detection process is modeled as a POMDP.                         ments. The discontinuous FDI attacks follow some unknown
+       The neural network based on the sliding observation                        strategies that are assumed to be independent of the estimator
+       window is constructed by applying the offline historical                   action. The measurement under discontinuous attacks can be
+       data to the experience replay.                                             represented in the following form:
+   2) A discontinuous FDI attack detection method based                                                   yt = Cxt + νt + [Λd ]t bt                          (2)
+       on reinforcement learning is proposed for CPSs with
+       unknown noise parameters. The proposed detector does                       where d ∈ R1×T denotes an attack indicator function with
+       not require designing the detection threshold value and                    each element being 0 or 1, and T represents the total detection
+       has higher detection precision than the conventional                       time of the FDI attack detector. [d ]t denotes the t-th element
+       residual-based χ 2 detectors.                                              of d , where [d ]t = 1 means there is an FDI attack at time t.
+   3) Some conditions on the reward parameters in the rein-                       bt ∈ Rn represents the injected malicious data to the system
+       forcement learning, attack frequency and attack duration                   at time t.
+       are given to ensure the validity of the proposed FDI                          The discontinuous attack model is shown in Fig. 1, where
+       detector.                                                                  τi denotes the duration of the ith attack, and τ̄i represents
+   This article is organized as follows. Section II formulates                    the unattacked interval between the ith and i + 1th attacks.
+the model of CPS, FDI attack models, and estimators, respec-                      For more detailed characterization, we define τmax as the
+tively. We introduce the residual-based FDI attack detection                      maximum duration of attacks, τ̄min as the minimum interval
+algorithms based on deep reinforcement learning in Section III.                   between two sequences of attacks, and λf as the attack
+The stability analysis is given in Section IV. In Section V,                      frequency, that is, τmax = max{τi }, τ̄min = min{τ̄i }, λf =
+                                                                                    
+numerical simulations are provided to verify the advantages                       ([ Tt=1 [d ]t ]/T). For the detector, the above parameters of
+of our algorithm. Finally, Section VI summarizes this article.                    the attack model are entirely unknown.
+   Notations: R, Rn , and Rn×m denote the set of real numbers,                       Remark 1: There may exist continuous FDI attacks in
+n-dimensional real vectors, and n×m real matrices, respectively.                  CPSs, where the attacker continuously launches attacks over
+In×n denotes an identity matrix with dimension n and 0m×n                         time and causes greater damage than discontinuous attacks.
+denotes zero matrix with dimension m × n. X ≥ Y (especially,                      However, continuously injecting attacks is undesirable for the
+X > Y) means X−Y is positive semidefinite (especially, positive                   attacker since it consumes much more energy and is easier to
+definite). ·2 denotes the Euclidian 2-norm. E(x|y) and Pr(x|y)                  be detected. Therefore, this article focuses on discontinuous
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: FDI ATTACK DETECTION IN CPSs WITH UNKNOWN PARAMETERS                                                                                                   7117
+
+
+
+                                                                                     A denotes the set of actions of the detector, which is composed
+                                                                                     of at , 1 ≤ t ≤ T with the following form:
+                                                                                                     
+                                                                                                       1, an attack was detected at time t
+                                                                                                at =
+                                                                                                       0, otherwise.
+                                                                                     If at = 0, the estimated state is updated by (3); otherwise,
+                                                                                     the attack was detected, and the estimated state is updated
+                                                                                     by (4). T denotes the set of conditional transition probabilities
+                                                                                     between the hidden states, and R : S × A → R denotes the
+Fig. 1.     Discontinuous FDI attack model.                                          reward function that maps the state-action pairs to rewards.
+                                                                                     The reward rt (st,l , at ) ∈ R is defined as
+                                                                                                                 ⎧
+attacks following some unknown strategies, whose detection                                                       ⎪ c1 , st = 1 & at = 1
+                                                                                                                 ⎪
+is more challenging.                                                                                        ⎨ −c2 , st = 1 & at = 0
+                                                                                                rt st,l , at =                                     (5)
+                                                                                                                 ⎪
+                                                                                                                 ⎪ −c3 , st = 0 & at = 1
+                                                                                                                 ⎩
+C. Estimator Under FDI Attacks                                                                                       c4 , st = 0 & at = 0
+   Since the noise covariances are unknown, the standard                             where c1 , c2 , c3 , and c4 are positive constants to be designed.
+Kalman filter is not applicable. To avoid the curse of dimen-                        The positive rewards c1 and c4 are adopted to encourage
+sionality, computational intractability and uncertain conver-                        the detection model to make better judgments. The penalty
+gence, we do not estimate the noise covariances from real-time                       rewards −c2 and −c3 are adopted to improve the attack detec-
+data. Therefore, when the measurement is detected to be not                          tion accuracy ρr and reduce the rate of false detection ρf ,
+attacked, we apply the Luenberger observer [31] as follows:                          where ρr and ρf are defined by
+                                                                                                          T
+                                                                                                               t=1 at · [Λd ]
+                                                                                                                             t
+                x̂t = Ax̂t−1 + K yt − CAx̂t−1               (3)
+                                                                                                     ρr =       T        t
+                                                                                                                 t=1 [Λd ]
+where x̂t denotes the estimate of state xt . The observer gain K                                            T                           
+                                                                                                               t=1 (1 − at ) · 1 − [Λd ]
+                                                                                                                                        t
+should satisfy the spectral radius condition (A − KCA) < 1.                                         ρf =        T                       .
+                                                                                                                     t=1 1 − [Λd ]
+   When the measurement is detected to be attacked, the                                                                            t
+following estimator is applied:
+                                                                                     O denotes the set of the observations of the environment with
+                                  x̂t = Ax̂t−1 .                              (4)    ot,l in it, where
+                                                                                                                                            
+  This article focuses on attack detection of system (1), (2)                                ot,l = ot−l , at−l , ot−l+1 , . . . , at−1 , ot
+                                                                                                                                             2 
+by using estimator (3), (4).                                                                  ot = q min yt − C Ax̂t−1 + But−1 2 , omax
+
+           III. FDI ATTACK D ETECTION BASED ON D EEP                                 q(·) denotes a quantizer and omax > 0 denotes the upper bound
+                   R EINFORCEMENT L EARNING                                          of the observation that will be designed later.
+                                                                                         G denotes the set of conditional observation probabilities,
+   Since the system noise covariances Wt and Vt are unknown,
+                                                                                     and π : O → A denotes the strategy of the detector.
+the χ 2 detector is not applicable. Therefore, we will model
+                                                                                         Remark 2: Being different from the detectors in [22], [23],
+the attack detection as the POMDP problem and then apply
+                                                                                     [24], [25], and [26], the detector in this article focuses on the
+reinforcement learning to explore the optimal solution.
+                                                                                     continuous monitoring of state estimation and, thus, should
+                                                                                     continuously detect the dynamic attacks and judge whether
+A. POMDP Modeling                                                                    the system is attacked at every step. Moreover, we refer to
+   For CPSs under discontinuous FDI attacks, the detector aims                       st,l as the hidden state instead of st , which contains historical
+at detecting the attack launch time t1 , t2 . . . tn and duration time               hidden states and actions.
+τ1 , τ2 . . . τn .                                                                       Remark 3: By regarding the attack strategy of the attacker
+   This problem can be expressed as a discrete-time POMDP                            as part of the unknown environment, we have Pr(st+1,l |
+that includes the seven-tuple (S, A, T , R, O, G, π ). Here, S                       s0,l , a0 , s1,l , a1 , . . . , st,l , at ) = Pr(st+1,l |st,l , at ), which implies
+denotes the set of hidden states of the environment, which                           the Markov property of the attack detection process. Due to
+is composed of states st,l . The state st,l with finite historical                   the unknown attack strategy, we cannot obtain the transition
+information is defined as follows:                                                   probabilities T and G, but we can solve the POMDP problem
+                                                                                   from a deep reinforcement learning approach.
+               st,l = st−l , at−l , . . . , si , ai , . . . , at−1 , st                  Remark 4: In the POMDP, we use historical information
+                                                                                     ot,l instead of current observation ot . By comparing the vari-
+where l denotes the window size. st denotes the attack state
+                                                                                     ations of oi and ai in ot,l , the detector can infer st from
+at time t, which is defined as
+                                                                                    historical information. For example, the detector can deduce
+                      1, CPS is under attack at time t                               st = 1 with a considerable probability through ot,2 =
+      st = [Λd ] =
+                t
+                      0, otherwise.                                                  [0.11, 0, 0.09, 0, 0.72]. Moreover, we set l > τmax such that
+
+          Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+7118                                                                                IEEE TRANSACTIONS ON CYBERNETICS, VOL. 53, NO. 11, NOVEMBER 2023
+
+
+
+ot,l can obtain both attacked and unattacked information. The                          Proof: To simplify the description, we first define s̄t,l as
+allowable upper bound of τmax under expected estimation                            st,l when st = 1 and st,l as st,l when st = 0, respectively. In
+                                                                                                                                              f
+performance will be given in the next section.                                     addition, s̄at,l is defined as s̄t,l when at−1 = 1 and s̄t,l is defined
+   Remark 5: To reduce the computational complexity of map-                        as s̄t,l when at−1 = 0. Similarly, st,l is defined as st,l when
+                                                                                                                              a
+ping from observations to actions in continuous spaces, we                                             f
+                                                                                   at−1 = 1 and st,l is defined as st,l when at−1 = 0.
+quantize min(yt − C(Ax̂t−1 + But−1 )22 , omax ). For example,
+                                                                                       Next, considering the optimal action-value function under
+the quantizer q(·) can be designed to keep two decimal places.
+                                                                                   the MDP and (6), we can obtain that
+The selection of quantizer is not unique. It does not affect the                                                                                
+Markov properties of the hidden state but affects the set of                                Q∗ st,l , at = rt st,l , at + γ      Pr st+1,l |st,l , at
+conditional observation probabilities and perceptual aliasing                                                                   st+1,l
+                                                                                                                                  
+of the hidden state.                                                                                        · max Q∗ st+1,l , at+1
+                                                                                                               at+1
+   Based on the above definitions, in the POMDP, the detector                                                                                    
+first obtains an observation ot,l ∈ O which depends on the                                                = rt st,l , at + γ    Pr st+1,l |st,l , at
+state st,l of the environment with the probability G(ot,l |st,l ).                                                              st+1,l
+                                                                                                                       
+Then it takes an action at and receives a reward rt (st,l , at ). At                                         · V∗ st+1,l .                                     (7)
+the same time, the environment transitions to the next state
+st+1,l with probability T (st+1,l |st,l , at ).                                    Therefore, the optimal action-value function includes two
+   In this process, the detection model aims to determine an                       cases corresponding to two different actions, that is, Q∗ (s̄t,l , 1)
+                                                                                   and Q∗ (s̄t,l , 0) if the CPS is under attack at time t. According
+             π tto maximize the expected total discounted
+optimal policy
+reward E[ ∞    t=0 γ rt (st,l , at )]. γ ∈ [0, 1) denotes a discount
+                                                                                   to (7)
+                                                                                                                                                
+factor that indicates how much present rewards are preferred                            Q∗ s̄t,l , 1 = c1 + γ        Pr st+1,l |s̄t,l , 1 · V∗ st+1,l
+over future rewards.                                                                                                 st+1,l
+   To begin with, we discuss the feasibility of the POMDP                                                                                         
+                                                                                                       = c1 + γ Pr s̄at+1,l |s̄t,l , 1 · V∗ s̄at+1,l
+when the detector has access to st . In this case, the POMDP is                                                                               
+actually the MDP. From the value-based reinforcement learn-                                              + γ Pr sat+1,l |s̄t,l , 1 · V∗ sat+1,l .
+ing under MDP [32], the action-value function Qπ (st,l , at ) and                  Similarly
+the state-value function Vπ (st,l ) for policy π are defined as                                                                          
+                                                                                      Q∗ s̄t,l , 0 = −c2 + γ  Pr st+1,l |s̄t,l , 0 · V∗ st+1,l
+                      ∞
+                                                                                                               st+1,l
+       Qπ st,l , at =   E γ i−t ri si,l , ai |π, s = st,l , a = at                                                                                
+                                                                                                                      f                      f
+                         i=t                                                                          = −c2 + γ Pr s̄t+1,l |s̄t,l , 0 · V∗ s̄t+1,l
+                    ∞                                                                                                                       
+                                                                                                         f                       f
+          Vπ st,l =   E γ i−t ri si,l , ai |π, s = st,l .                                               + γ Pr st+1,l |s̄t,l , 0 · V∗ st+1,l .
+                         i=t
+                                                                                   According to the assumption of the attack strategy inde-
+Moreover, based on the Bellman equation [33], the action-                          pendence, it can be obtained that Pr(s̄at+1,l |s̄t,l , 1) =
+                                                                                        f                                                       f
+value function can be rewritten as follows:                                        Pr(s̄t+1,l |s̄t,l , 0), Pr(sat+1,l |s̄t,l , 1)  =        Pr(st+1,l |s̄t,l , 0).
+                                                                              Meanwhile, from (5), the reward at any time i (i > t) just
+Qπ st,l , at = E rt st,l , at                                                      depends on ai and si but not on at , and, thus, according to
+                                                       
+               + γ Qπ st+1,l , at+1 |π, s = st,l , a = at . (6)                    the definition of the value function we can obtain that
+                                                                                                         ∞
+                                                                                                                                                        
+The optimal value function V∗ (st,l ) = maxπ Vπ (st,l ) under                           V∗ s̄at+1,l =         E γ i−t−1 ri si,l , ai |π ∗ , s = s̄at+1,l ,
+the best strategy π ∗ can be obtained by the equation                                                    i=t+1
+V∗ (st,l ) = maxat Q∗ (st,l , at ). The optimal action-value function                                     ∞                                               
+                                                                                                                                      
+Q∗ (st,l , at ) = maxπ Qπ (st,l , at ) can be obtained by iterating                                  =           E γ i−t−1 ri si,l , ai |π ∗ , s = s̄t+1,l
+                                                                                                                                                     f
+
+the following formula [28]:                                                                            i=t+1
+                                                                                                                
+                                                                                                      f
+                                                                                                     = V∗ s̄t+1,l .
+   Qk+1 st,l , at = Qk st,l , at + α rt st,l , at
+                                                                                  Similarly
+                                                                                                                            
+                     + γ max Qk st+1,l , at+1 − Qk st,l , at                                                             f
+                                at+1                                                                      V∗ sat+1,l = V∗ st+1,l .
+where k denotes the number of iterations and α denotes                             Therefore, it can be obtained that
+the learning rate. According to [34], Qk (st,l , at ) converges to                                                           
+                                                                                                     Q∗ s̄t,l , 1 > Q∗ s̄t,l , 0 .
+Q∗ (st,l , at ) w.p.1 when k → ∞.
+   We first show the effectiveness of the reward setting for the                   In the same way, the following inequality can be obtained:
+MDP in attack detection.                                                                                                  
+                                                                                                    Q∗ st,l , 0 > Q∗ st,l , 1 .
+   Theorem 1: Under the reward setting (5), the trained attack
+detection model for the MDP can detect the attack accurately                       Thus, the trained model can detect the attacks by Q∗ (st,l , at )
+by the optimal action-value function Q∗ (st,l , at ).                              with the reward setting (5). This completes the proof.
+
+        Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: FDI ATTACK DETECTION IN CPSs WITH UNKNOWN PARAMETERS                                                                                                    7119
+
+
+
+                                                                                     the optimal action arg maxat Qk (st,l , at ). Thus, the underlying
+                                                                                     Markov chain is ergodic. According to [36], Assumption 4 is
+                                                                                     always satisfied in the training process. By using the ε-greedy
+                                                                                     policy during learning, the conditions for w.p.1 convergence
+                                                                                     of Q-learning in MDPs can also be satisfied.
+                                                                                        Lemma 1: In a POMDP satisfying Assumption 4, if a per-
+                                                                                     sistent excitation policy μ is followed during learning, the
+                                                                                     optimal action-value function Q̄∗ (ot,l , at ) will converge to the
+                                                                                     solution of the following equation with probability one:
+                                                                                                                        ⎡
+                                                                                        μ                                       
+Fig. 2.     Perceptual aliasing between different hidden states si,l and sj,l .       Q̄∗ ot,l , at =   Pr μ si,l |ot,l ⎣ri si,l , at
+                                                                                                          si,l
+                                                                                                                                                                      ⎤
+                                                                                                                                                 μ             
+   Based on the above analysis, there is an optimal strategy                                             +γ               Pr ot+1,l si,l , at max Q̄∗ ot+1,l , at+1 ⎦
+                                                                                                                                               at+1
+to determine whether there is an attack if we can correctly                                                      ot+1,l
+identify the hidden state st,l of the environment. However, in                                                                                                      (9)
+this attack detection problem, the detector has no access to the
+attack sequences of the attacker. In other words, st,l cannot be                     where
+known to the detector. Therefore, this attack detection problem                                                                               
+                                                                                      Pr ot+1,l si,l , at =   Pr si+1,l |si,l , at Pr ot+1,l si+1,l
+cannot be solved by directly applying MDP. Instead, the partial
+                                                                                                                   si+1,l ∈S
+historical observation ot,l is applied and the attack detection                                                               
+problem is converted to a POMDP problem. Thus, the optimal                                     μ
+                                                                                                          Pr ot,l |si,l Prμ si,l
+                                                                                            Pr si,l |ot,l =             
+action-value function Q̄∗ (ot,l , at ) under partial observation is                                                 Prμ ot,l
+                                                                                                                                   
+considered and can be obtained by iterating the following                                                       Pr ot,l |si,l Prμ si,l
+formulation:                                                                                              =                       μ 
+                                                                                                       sj,l ∈S Pr ot,l |sj,l Pr sj,l
+           Q̄k+1 ot,l , at = Q̄k ot,l , at + α rt st,l , at
+                                                                                   and Prμ (si,l ) is the probability of si,l under the stationary dis-
+                             + γ max Q̄k ot+1,l , at+1                               tribution based on policy μ over the underlying state space of
+                                   at+1
+                                                                                  the MDP.
+                             − Q̄k ot,l , at                    (8)
+                                                                                        Theorem 2: In POMDP (8) satisfying Assumption 4, if a
+where Q̄k (ot,l , at ) is the kth iteration action-value function                    persistent excitation policy μ is followed during learning and
+based on ot,l .                                                                      the reward parameters satisfy that c1 > c4 , γ < (1/2), and
+    Remark 6: It should be mentioned that the hidden state is                                            (c3 + c4 ) + γ (|c2 − c3 | + c1 − c4 )
+known when training the detection model, and the reward                                             ρ>                                                             (10)
+                                                                                                         (c1 + c3 ) + γ (|c2 − c3 | − c1 + c4 )
+rt (st,l , at ) is available in training. It is reasonable since the
+training data (such as the CPS run logs with discontinuous sim-                      then the trained attack detection model (8) can detect the
+ulated FDI attacks) can be obtained. However, in the detection                       attack, where ρ denotes the hidden state recognition rate and
+process, the hidden state st,l of the system cannot be known                         is defined as
+to the defender in advance.                                                                                                             
+                                                                                                       ρ = min max ρ̄ ot,l , 1 − ρ̄ ot,l
+                                                                                                           ot,l
+                                                                                                                                     μ 
+                                                                                                             s̄i,l ∈S Pr ot,l |s̄i,l Pr s̄i,l
+B. Reinforcement Learning With Perceptual Aliasing
+                                                                                                 ρ̄ ot,l =                           μ  .
+   The finite historical observation ot,l may not fully charac-
+                                                                                                               sj,l ∈S Pr ot,l |sj,l Pr sj,l
+terize the hidden state st,l . As is shown in Fig. 2, different
+hidden states may have the same observation (perceptual                                 Proof: First, we analyze the upper bound and lower bound
+                                                                                                   μ
+aliasing) [35]. Therefore, the optimal action-value function                         of maxat Q̄∗ (ot,l , at ). From (9) and the reward setting (5), we
+Q̄∗ (ot,l , at ) under observation may differ from Q∗ (st,l , at ).                  have
+An assumption is given to analyze the optimal action-value                              μ                             
+                                                                                      Q̄∗ ot,l , at ≤ max{c1 , c4 } + γ
+function Q̄∗ (ot,l , at ), and a result from [36] is introduced by
+                                                                                                                                  ot+1,l
+Lemma 1.                                                                                                                                             
+                                                                                                            μ
+                                                                                                                                   μ             
+   Assumption 4: The POMDP in the attack detection has                                                    Pr ot+1,l |ot,l , at max Q̄∗ ot+1,l , at+1 . (11)
+                                                                                                                                       at+1
+the property that the underlying MDPs are ergodic for every
+stationary policy.                                                                                                         μ
+                                                                                     For any ot,l , maxat Q̄∗ (ot,l , at ) can be further upper
+   Remark 7: The detector takes an action at according to ot,l                       bounded by
+by using the ε-greedy policy. This implies that all station-
+                                                                                                μ         
+ary policies assign a nonzero probability to every action in                              max Q̄∗ ot,l , at ≤ max{c1 , c4 }
+                                                                                           at
+every state during training, which means there is always a                                                                    μ           
+                                                                                                              + γ max max Q̄∗ ot+1,l , at+1 . (12)
+nonzero probability ε(0 < ε < 1) to take other actions except                                                                    ot+1,l at+1
+
+
+          Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+7120                                                                                                 IEEE TRANSACTIONS ON CYBERNETICS, VOL. 53, NO. 11, NOVEMBER 2023
+
+                                                                                                                                                              
+Hence, from 0 ≤ γ < 1, we have                                                                                               γ (min{c1 , c4 } + max{c2 , c3 })
+                                                                                                               ≥ ρ c1 + c3 +
+                                                                                                                                          1−γ
+                   μ          max{c1 , c4 }                                                                                                                 
+             max Q̄∗ ot,l , at ≤              .                                              (13)                            γ (max{c1 , c4 } + max{c2 , c3 })
+              at                  1−γ                                                                            − c3 + c4 +
+                                                                                                                                           1−γ
+In addition                                                                                                    > 0.                                              (18)
+                                 
+  μ                                       
+Q̄∗ ot,l , at ≥   Pr μ si,l |ot,l ri si,l , at                                                      From the form of ρ, it is obvious that ρ < 1.
+                    si,l ∈S
+                                                                                                 Therefore, as long as ([(c3 + c4 ) + γ (|c2 − c3 | + c1 − c4 )]/
+                                                    +γ              Pr ot+1,l |si,l , at            [(c1 + c3 ) + γ (|c2 − c3 | − c1 + c4 )]) < ρ < 1, the attack can
+                                                           ot+1,l                                   be detected. This completes the proof.
+                                                                                
+                                                                μ                                    Remark 8: The condition in Theorem 2 is sufficient but
+                                                    · min max Q̄∗ ot+1,l , at+1 .                   not necessary for the detection precision of the trained attack
+                                                       ot+1,l at+1
+                                                                                                    detection model. From Theorem 2, we can set appropriate
+Therefore                                                                                           parameters c1 , c2 , c3 , c4 , and γ to ensure the accuracy of
+        μ                                     
+ max Q̄∗ ot,l , at ≥   Pr μ si,l |ot,l ri si,l , at                                                 the detection even when there are some state recognition
+    at                                                                                              errors. Meanwhile, the theorem also shows that when obser-
+                                   si,l ∈S
+                                                 μ                                                vation ot,l cannot fully represent the hidden state, the attack
+                                   + γ min max Q̄∗ ot+1,l , at+1
+                                             ot+1,l at+1                                            detection model can still be effective by selecting appropriate
+                             ≥ ρ min{c1 , c4 } + (1 − ρ) min{−c2 , −c3 }                            parameters.
+                                                 μ          
+                               + γ min max Q̄∗ ot+1,l , at+1 .
+                                             ot+1,l at+1
+                                                                                                    C. Deep Reinforcement Learning for FDI Attack Detections
+                                                                       μ
+Similarly, the lower bound of maxat Q̄∗ (ot,l , at ) can be                                            ot,l is complex and, thus, is difficult to traverse in the
+obtained by using                                                                                   iterative calculation. Moreover, the hidden states st,l become
+        μ          ρ min{c1 , c4 } − (1 − ρ) max{c2 , c3 }                                        complicated when considering discontinuous attack detections.
+  max Q̄∗ ot,l , at ≥                                        .                               (14)
+   at                                 1−γ                                                           Therefore, deep reinforcement learning is applied where the
+                            μ                         μ                                             deep neural network can implement function fitting and has
+Then, consider Q̄∗ (ōt,l , 1) and Q̄∗ (ōt,l , 0), where ōt,l denotes
+                                                                                                    a specific generalization ability. We apply the deep neural
+the ot,l under attack. Define s̄i,l as si,l under si = 1 and si,l as                                                                μ
+                                                                                                    network to fitting maxat Q̄∗ (ot,l , at ), where the input is ot,l and
+si,l under si = 0, respectively. From (9) and the bounds in (13)                                                    
+                                                                                                    the output is Q(ot,l , at ). The training process and test process
+and (14), it can be obtained that
+               μ                                                                                 of the FDI attack detection model based on deep reinforce-
+  μ                                          
+Q̄∗ ōt,l , 1 ≥     Pr s̄i,l |ōt,l ri s̄i,l , 1                                                    ment learning (DRL-FDID) are demonstrated in Algorithms 1
+                    s̄i,l                                                                           and 2.
+                                                                                                  In the algorithm, the loss function under DDQN [30] can
+                   +               Pr μ si,l |ōt,l ri si,l , 1
+                                                                                                    be written as follows:
+                            si,l
+                                 μ                                                                                Nb                         
+                   + γ min max Q̄∗ ot+1,l , at+1                                                               1                  
+                                                                                                                                            
+                                                                                                                                                       
+                             ot+1,l at+1                                                              loss =             rt st,l , at i + γ Qθ ot+1,l i
+                                                                                                              Nb
+               ≥ ρc1 + (ρ − 1)c3                                                                                   i=1
+                    γ (ρ min{c1 , c4 } − (1 − ρ) max{c2 , c3 })                                                                                                         
+                                                                                                                                                                    2
+                 +                                              (15)                                           arg max Qθ ot+1,l i , at+1 −      Qθ (ot+1 )i , (at )i
+                                            1−γ                                                                      at+1
+  μ                                          
+Q̄∗ ōt,l , 0 ≤      Pr μ s̄i,l |ōt,l ri s̄i,l , 0                                                                                                                               (19)
+                    s̄i,l
+                                                                                               where {(ot,l )i , (at )i , (rt (st,l , at ))i , (ot+1,l )} represents the ith
+                   +               Pr μ si,l |ōt,l ri si,l , 0                                     experience replay data stored in replay buffer D, and Nb is the
+                            si,l                                                                    batch size. The DDQN uses the current network θ and target
+                                 μ              
+                   + γ max max Q̄∗ ot+1,l , at+1                                                    network θ where the outputs are                Qθ (ot,l , at ) and 
+                                                                                                                                                                        Qθ (ot,l , at ),
+                             ot+1,l at+1
+                                                                                                    respectively.
+                                γ max{c1 , c4 }
+                ≤ c4 +                          .                                            (16)      In Algorithm 1, the detector takes an action at according to
+                                   1−γ                                                              the sliding observation window ot,l and -greedy policy. Then,
+From (15) and (16), if                                                                              the estimate moves to the next state st+1,l according to (3)
+                            γ
+                 c3 + c4 + 1−γ [max{c2 , c3 } + max{c1 , c4 }]                                      or (4), and the reward rt (st,l , at ) and ot+1,l can be obtained.
+           ρ>               γ
+                                                                                                    The transition tuple {ot,l , at , rt , ot+1,l } is stored in the replay
+               c1 + c3 + 1−γ   [max{c2 , c3 } + min{c1 , c4 }]                                      buffer D and the batch processing is applied to training the cur-
+               (c3 + c4 ) + γ (|c2 − c3 | + c1 − c4 )                                               rent network θ by (19) with prioritized experience replay [37].
+             =                                                                               (17)   Then, the target network θ is updated in a certain frequency.
+               (c1 + c3 ) + γ (|c2 − c3 | − c1 + c4 )
+                                                                                                    In Algorithm 2, the target network θ is loaded when testing
+we have
+                                                                                                    the detection accuracy ρr and false detection rate ρf of the
+            μ             μ         
+          Q̄∗ ōt,l , 1 − Q̄∗ ōt,l , 0                                                             detection model.
+
+         Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: FDI ATTACK DETECTION IN CPSs WITH UNKNOWN PARAMETERS                                                                                            7121
+
+
+Algorithm 1 DRL-FDID Training Algorithm                                             Lemma 2: The discrete-time switching system with two
+input: ot,l .                                                                  switching modes zt+1 = i zt , i = 1, 2, is considered, where
+output: Q-table, i.e.,  Q ot,l , at , ∀ot,l ∈ O and ∀at ∈ A.                    the frequency of mode 1 is r. If there exist a positive matrix
+initialization: D - empty replay buffer
+                                                                                  > 0 and positive scalars α1 and α2 such that
+              θ,θ - initial network parameters
+                Nt - transition tuple number                                                                   α1r α21−r > 1
+                Nr - training size
+                Nb - batch size                                                                              T1 1 ≤ α1−2 
+                 C - update frequency
+                                                                                                             T2 2 ≤ α2−2                                (20)
+1. for episode e ∈ {1, 2, . . . , M} do
+2. Initialize system state X and environment E                                   the system is exponentially stable.
+3. for step t ∈ {0, 1, . . .} do
+4.        Choose at according to ot,l by -greedy policy
+                                                                                    From Lemma 2, we can obtain the following stability
+5.        if a == 1,                                                             condition of the estimation error system.
+6.            execute (4)                                                           Theorem 3: For      the      CPS      (1)-(2)  satisfying
+7.        else,                                                                  Assumptions 1–3, attack detection-based estimator (3), (4)
+8.            execute (3)                                                        and DRL-FDID algorithm are applied. If the attack frequency
+9.        Obtain the next observation ot+1,l from E
+10.        Obtain rt according to
+                                                                                 λf satisfies
+                                    (5)               
+11.        Add transition tuple ot,l , at , rt , ot+1,l to D                                                0 ≤ λf < 1 − λmin                               (21)
+12.        Nt ← Nt + 1
+13.        if Nt > Nr :                                                          then the estimation error covariance is bounded. Where λmin
+14.            Sample Nb tuples from D                                           is the minimum solution of the following inequalities with
+15.            Update the network parameters θ by (19)
+16.            if Nt %C == 0:                                                    1 = (A − KCA) ⊗ (A − KCA) and 2 = A ⊗ A
+17.                θ ←θ                                                                              λmin = min r
+18. end
+19. end                                                                                                     s.t. α1r α21−r > 1
+20. Save the target network θ
+                                                                                                                     T1 1 ≤ α1−2 
+21. Execute Algorithm 2 for testing.
+                                                                                                                     T2 2 ≤ α2−2 .                      (22)
+
+Algorithm 2 DRL-FDID Test Algorithm                                                 Proof: Define Pt as the estimation error covariance, that
+                                                                                 is, Pt = E[(xt − x̂t )(xt − x̂t )T ]. For the CPS (1)-(2) under
+input: target network θ
+output: detection accuracy ρr and false detection rate ρf                        estimator (3) and (4), the corresponding covariance can be
+1. load the target network θ                                                     updated by
+2. for episode e ∈ {1, 2, . . . , M} do                                                                                     
+4. for step t ∈ {0, 1, . . .} do                                                  Pt+1 = (Im − (1 − at )KC) APt AT + Wt (Im − (1 − at )KC)T
+                                                
+5.       Choose at according to     Q ot,l , at                                         + (1 − at )KVt K T .                            (23)
+6.       if a == 1                                                                        →
+                                                                                          −                →
+                                                                                                           −                  →
+                                                                                                                              −
+7.           execute (4)                                                         Defining P t = vec(Pt ), W t = vec(Wt ), and V t = vec(Vt ),
+8.       else                                                                    then (23) can be rewritten as follows:
+9.           execute (3)
+                                                                                     →
+                                                                                     −                                               →
+                                                                                                                                     −
+10. end                                                                              P t+1 = (A − (1 − at )KCA) ⊗ (A − (1 − at )KCA) P t
+11. calculate ρr and ρf                                                                                                               →
+                                                                                                                                      −
+12. end                                                                                      + (Im − (1 − at )KC) ⊗ (Im − (1 − at )KC)Wt
+                                                                                                               →
+                                                                                                               −
+                                                                                             + (1 − at )K ⊗ K Vt .
+                                                                                 Since the last two parts in the right side of the above equa-
+                 IV. S TABILITY A NALYSIS OF                                                                                            →
+                                                                                                                                        −
+                                                                                 tion are bounded, we investigate the boundedness of P t by
+                DRL-FDID-BASED E STIMATOR                                        studying the stability of the following system:
+   From the estimator (3) and (4), when attack is detected, the
+                                                                                   ξ(t + 1) = (A − (1 − at )KCA) ⊗ (A − (1 − at )KCA)ξ(t).
+state estimation is updated without measurement information.
+So, the influence of attacks can be seen as the packet losses                       From Lemma 2, ξ(t) will be exponentially stable if there
+of the measurement. It is well known that large frequency                        exist a positive-definite matrix  > 0 and scalars α1 and α2
+and duration of packet losses may destroy the stability of                       such that LMIs (22) hold. Since the feasibility of LMIs (22)
+the estimation system and further destroy the feasibility of                     is increasing with the decrease of r, ξ(t) will be exponentially
+the DRL-FDID algorithm. This section discusses the stabil-                       stable for any ra ≥ λmin , where λmin is defined as the minimum
+ity of the DRL-FDID-based estimator for the system under                         solution of (22). In other words, if the attack frequency λf
+discontinuous attacks and further provides sufficient stability                  satisfies 0 ≤ λf < 1 − λmin , the estimation error covariance Pt
+conditions.                                                                      is bounded. This completes the proof.
+   Under the attacks, the state estimation error can be regarded                    Next, the influence of the attack duration τmax is analyzed.
+as a switching system with two switching modes. To begin                         A general assumption about error covariance Pt is first given.
+with, we give a related result on the stability of the switching                    Assumption 5: The attack frequency satisfies (21) and the
+system [38].                                                                     estimation covariance Pt of the CPS is bounded. During each
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+7122                                                                               IEEE TRANSACTIONS ON CYBERNETICS, VOL. 53, NO. 11, NOVEMBER 2023
+
+                                                                                                                                                       
+unattacked interval τ i , the estimation covariance converges                                                 T t−de T   
+                                                                                                                           t−de
+                                                                                                                                    i
+                                                                                                      t−de ∗
+                                                                                           ≤ tr CA         P A        C +
+                                                                                                                         w      CAi AT CT
+fast and after τ i iterations the estimation covariance is upper
+bounded by P∗ . In other words, Pde−1 satisfies Pde−1 ≤ P∗ ,                                                                        i=0
+                                                                                           + tr(
+                                                                                                vIn×n )
+where de represents the attack instant satisfying sde−1 = 0 and
+                                                                                                               1 − gτmax
+sde = 1, P∗ is the solution of the following Riccati equation:                             ≤ cpgτmax + c
+                                                                                                        w                + n
+                                                                                                                            v
+                                                                                                               1−g
+     P∗ = (Im×m − KC) AP∗ AT +       wIm×m (Im×m − KC)T
+                                                                                  where c = tr(CCT ).
+             +
+              vKK T
+                                                                                     Remark 9: In the FDI attack detection, we could set
+                                                                                                                                        ∗
+where  w and v denote the known upper bound of (Wt ) and                       the parameter omax in the quantizer by omax = cpgτ +
+                                                                                              ∗
+(Vt ), respectively.                                                              w([1 − gτ ]/[1 − g]) + n
+                                                                                  c                          v to reduce the complexity of
+  Theorem 4: For        the    CPS      (1)-(2)    satisfying                     the DRL-FDID algorithm since the data for training
+Assumptions 1–5, the attack detection-based estimator (3), (4)                    will increase with the increase of omax , where τ ∗ =
+and DRL-FDID algorithm are applied. If the maximum attack                         logg ([∗ (g − 1) + w̄]/[p(g − 1) + w̄]).
+duration τmax satisfies
+                                      ∗ (g − 1) + 
+                                                   w                                                    V. S IMULATION R ESULTS
+                    τmax ≤ logg                                          (24)
+                                      p(g − 1) + w                                  In this section, simulations are given to verify the effec-
+then the error covariance Pt is bounded and (Pt ) ≤ ∗ , where                   tiveness of the proposed DRL-FDID algorithm. DRL-FDID
+g = (AT A) and p = (P∗ ), ∗ is the predefined estimation                       algorithms under the Luenberger observer and the standard
+performance.                                                                      Kalman filter are tested, respectively. Both simulations are
+   Proof: Define an operator f with f (Pt ) = APt AT +Wt . Then,                  implemented using Python 3.7.4 on the workstation with Intel
+from Assumption 5, the following inequality can be obtained                       Xeon Silver 4110 CPU @ 2.10-GHz processor and 128-GB
+from [39]:                                                                        memory. The fully connected neural network is adopted, where
+                                                                                the building is solved by Python Tensorflow 1.14.0.
+       (Pde ) = (f (Pde−1 )) =  APde−1 AT + Wt
+                                              
+                                ≤  APde−1 AT + (Wt )                            A. DRL-FDID With Unknown Parameters
+                                       w.
+                                ≤ gp +                                             There is an unmanned vehicle control system [40], whose
+In the same way, the following inequality can be obtained for                     dynamics can be discretized as follows:
+any tτ > 0:                                                                                  ⎡                                       ⎤
+                                                                                                  I3×3                 0.15I3×3
+                                                                                            ⎢ 0 0 − 0.03 1.03
+          t                        t                                                                                    0     0 ⎥
+                                                                                        A=⎢  ⎣0 0
+                                                                                                                                     ⎥
+         f τ (Pde−1 ) =  Atτ Pde−1 AT τ                                                                0.03      0      1.03    0 ⎦
+                                                                                               0 0         0       0        0   0.76
+                                                                                                       
+                                       τ −1
+                                      t
+                                                          i                         C = I3×3 03×3
+                                +              i
+                                              A Wtτ +t−i−1 AT
+                                      i=0
+                                                                                 with Wt = diag([0.01, 0.01, 0.04, 0.04, 0.01, 0.01]) and
+                                 t                                              Vt = diag ([0.01, 0.01, 0.04]). Wt and Vt are unknown to the
+                            ≤  AT τ Pde−1 Atτ
+                                 t −1                                           state estimator while bounded with    w =  v = 0.1. The esti-
+                                  τ
+                                                    T i                         mation performance index is set as ∗ = 10. We set K to
+                              +        i
+                                       A Wtτ +t−i−1 A                             be the steady-state Kalman filter gain under Wt =   wIm×m and
+                                         i=0                                      Vt =  vIn×n .
+                                               1 − gtτ                               In the training, the noise attack with covariance N1 = diag
+                            ≤ g p+
+                                 tτ
+                                  w                    .
+                                                1−g                               ([1, 3, 1]) is considered. The maximum duration of attacks
+Define function h(tτ ) as follows:                                                τmax is 4 and the minimum duration of unattacks τ min is 5,
+                                                                                  which satisfies Theorems 3 and 4. In the training sample,
+                                                   1 − gtτ
+                      h(tτ ) = gtτ p + 
+                                       w                   .                      considering the storage bit number of GPU, the quantizer
+                                                    1−g                           q(·) is designed to keep two decimal places. For example
+Since A is unstable, g = (AT A) > 1 and h(tτ ) is                                q(3.1415) = 3.14. In addition, set l = 5 and omax =
+monotonously increasing with tτ . If                                              26.94 based on Remark 9. The reward is designed to be
+                                          ∗ (g − 1) + 
+                                                       w                          {c1 , −c2 , −c3 , c4 } = {10, −20, −5, 5}. The total training
+                 tτ ≤ τmax ≤ logg                                                 episode is set as 500 where every episode includes 100 steps
+                                          p(g − 1) + w
+                                                                                  and 85 data samples. The replay buffer size is 20 000 and the
+then h(tτ ) ≤ ∗ . This proof is completed.                                       batch size is 128. The learning rate is selected to be 0.005 and
+   In the following analysis, we discuss how to choose omax                       the reward decay is 0.3.
+in POMDP based on τmax . For t ∈ [de, de + τi ], we have                             In the testing, two cases of discontinuous attacks, includ-
+                               2                                              ing noise attack with covariance N2 = diag([1, 2, 1]) and
+     E yt − C Ax̂t−1 + But−1 2
+                                                                              fixed attack with amplitude bt = [1, 1, 3]T are considered,
+       = tr C APt−1 AT + Wt−1 CT + Vt                                             respectively.
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: FDI ATTACK DETECTION IN CPSs WITH UNKNOWN PARAMETERS                                                                                                7123
+
+
+
+
+Fig. 3.    Detection rate ρr and false detection rate ρf under unknown               Fig. 5. DRL-FDID based on the Kalman filter compared with the χ 2 detector.
+parameters.
+
+
+
+
+                                                                                     Fig. 6.   Loss value during training under different scenarios.
+Fig. 4.     Loss value under Luenberger observer.
+
+
+
+    After the testing, the attack detection rate ρr and false detec-
+tion rate ρf are shown in Fig. 3. From the simulation result, we
+can observe that before the training, the randomly initialized
+neural-network attack detection rate ρr < 0.4 and the false
+detection rate ρf > 0.3. However, the neural network quickly
+achieves an effective detection strategy when the collected data
+fills the replay buffer. Moreover, the detection rate of the fixed
+attack is higher than that of the random noise attack. It is rea-
+sonable since if the attack intensity of the random signal is
+not very high, the attack can be seen as harmless and ignored.
+    In addition, the loss function in Fig. 4 indicates that the
+                                                                                     Fig. 7.   Variations of ρr and ρf under DRL-FDID and χ 2 detector.
+action value function    Q(ot,l , at ) fitted by the neural network
+gradually approaches the actual value. The loss function finally
+fluctuates at some nonzero point, which avoids overfitting, and
+the model has a good scalability for different attacks.                              is obvious that the DRL-FDID algorithm has higher detec-
+                                                                                     tion accuracy and lower false detection rate. The loss function
+                                                                                     in Fig. 6 shows the convergence of the neural network. In
+B. DRL-FDID Based on Kalman Filter                                                   addition, the variations of ρr and ρf by changing c1 and c4
+   In this part, we will demonstrate the advantage of the                            in DRL-FDID, and gthreshold in the χ 2 detector are shown in
+proposed detection algorithm in discontinuous attack detec-                          Fig. 7. It further shows that there exists a nonlinear relation
+tion compared with the standard χ 2 detector. The system                             between ρr and ρf in both detectors. In the χ 2 detector, a small
+model is the same as the above section, but Wt and Vt are                            threshold is selected to achieve a high attack detection rate,
+known to the state estimator that Wt = diag ([0.01, 0.05,                            which makes the false detection rate large. Hence, a single-
+0.05, 0.04, 0.04, 0.01]) and Vt = diag([0.1, 0.1, 0.01]). In the                     threshold setting cannot accommodate both ρr and ρf . Through
+training, the settings of relevant parameters are the same as                        reinforcement learning, the neural network has learned differ-
+above. The noise attack with covariance N3 = diag([1, 2, 1])                         ent attack detection thresholds under discontinuous attacks and
+is considered in the testing.                                                        performed better.
+   The attack detection rates and the false detection rates                             Finally, we will show the influence of window size l and
+under DRL-FDID and χ 2 detector are shown in Fig. 5. It                              rewards on the attack detection rate and false detection rate.
+
+          Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+7124                                                                                IEEE TRANSACTIONS ON CYBERNETICS, VOL. 53, NO. 11, NOVEMBER 2023
+
+
+                                TABLE I
+       ρr AND ρf U NDER D IFFERENT W INDOW S IZES l AND R EWARDS                   [11] Y. Mo, R. Chabukswar, and B. Sinopoli, “Detecting integrity attacks on
+                                                                                        SCADA systems,” IEEE Trans. Control Syst. Technol., vol. 22, no. 4,
+                                                                                        pp. 1396–1407, Jul. 2014.
+                                                                                   [12] B. Chen, D. W. C. Ho, G. Hu, and L. Yu, “Secure fusion estimation
+                                                                                        for bandwidth constrained cyber-physical systems under replay attacks,”
+                                                                                        IEEE Trans. Cybern., vol. 48, no. 6, pp. 1862–1876, Jun. 2018.
+                                                                                   [13] Y. Mo and B. Sinopoli, “On the performance degradation of cyber-
+                                                                                        physical systems under stealthy integrity attacks,” IEEE Trans. Autom.
+                                                                                        Control, vol. 61, no. 9, pp. 2618–2624, Sep. 2016.
+                                                                                   [14] K. Manandhar, X. Cao, F. Hu, and Y. Liu, “Detection of faults and
+                                                                                        attacks including false data injection attack in smart grid using Kalman
+                                                                                        filter,” IEEE Trans. Control Netw. Syst., vol. 1, no. 4, pp. 370–379,
+                                                                                        Dec. 2014.
+                                                                                   [15] X. Liu, Y. Guan, and S. W. Kim, “Bayesian test for detecting false data
+                                                                                        injection in wireless relay networks,” IEEE Commun. Lett., vol. 22, no. 2,
+                                                                                        pp. 380–383, Feb. 2018.
+According to Table I, we can appropriately increase the pro-                       [16] Y. Guan and X. Ge, “Distributed attack detection and secure estimation
+portion between c1 and c4 to improve the attack detection                               of networked cyber-physical systems against false data injection attacks
+                                                                                        and jamming attacks,” IEEE Trans. Signal Inf. Process. Netw., vol. 4,
+accuracy ρr . We can also make the DRL-FDID effective                                   no. 1, pp. 48–59, Mar. 2018.
+through appropriate reward settings when the observation                           [17] A. Barboni, H. Rezaee, F. Boem, and T. Parisini, “Detection of covert
+cannot fully represent the system features.                                             cyber-attacks in interconnected systems: A distributed model-based
+                                                                                        approach,” IEEE Trans. Autom. Control, vol. 65, no. 9, pp. 3728–3741,
+                                                                                        Sep. 2020.
+                            VI. C ONCLUSION                                        [18] D. Ye and T.-Y. Zhang, “Summation detector for false data-injection
+                                                                                        attack in cyber-physical systems,” IEEE Trans. Cybern., vol. 50, no. 6,
+   In this article, the discontinuous FDI attack detection                              pp. 2338–2345, Jun. 2020.
+problem with unknown system parameters was modeled as a                            [19] R. Zhang and P. Venkitasubramaniam, “False data injection and detec-
+                                                                                        tion in LQG systems: A game theoretic approach,” IEEE Trans. Control
+POMDP problem. A deep reinforcement learning-based detec-                               Netw. Syst., vol. 7, no. 1, pp. 338–348, Mar. 2020.
+tion method was proposed. How to design parameters of                              [20] R. Chen, X. Li, H. Zhong, and M. Fei, “A novel online detection method
+reinforcement learning to guarantee the validity of the detec-                          of data injection attack against dynamic state estimation in smart grid,”
+                                                                                        Neurocomputing, vol. 344, pp. 73–81, Jun. 2019.
+tion algorithm was given. The numerical simulation results                         [21] Y. Li, L. Shi, and T. Chen, “Detection against linear deception attacks on
+verified the effectiveness of the proposed detection algorithm.                         multi-sensor remote state estimation,” IEEE Trans. Control Netw. Syst.,
+Our future research focuses on modeling the strategic relation-                         vol. 5, no. 3, pp. 846–856, Sep. 2018.
+ship between the attacker and the detector in a game-theoretic                     [22] J. James, Y. Hou, and V. O. Li, “Online false data injection attack detec-
+                                                                                        tion with wavelet transform and deep neural networks,” IEEE Trans. Ind.
+setting and solving the attack detection problem for systems                            Informat., vol. 14, no. 7, pp. 3271–3280, Jul. 2018.
+with unknown system parameters.                                                    [23] F. Jiang et al., “Deep learning based multi-channel intelligent attack
+                                                                                        detection for data security,” IEEE Trans. Sustain. Comput., vol. 5, no. 2,
+                                                                                        pp. 204–212, Apr.–Jun. 2020.
+                               R EFERENCES                                         [24] Y. Zhang, J. Wang, and B. Chen, “Detecting false data injection attacks
+                                                                                        in smart grids: A semi-supervised deep learning approach,” IEEE Trans.
+ [1] Y. Liu, Y. Peng, B. Wang, S. Yao, and Z. Liu, “Review on cyber-physical            Smart Grid, vol. 12, no. 1, pp. 623–634, Jan. 2021.
+     systems,” IEEE/CAA J. Automatica Sinica, vol. 4, no. 1, pp. 27–40,            [25] M. N. Kurt, O. Ogundijo, C. Li, and X. Wang, “Online cyber-attack
+     Jan. 2017.                                                                         detection in smart grid: A reinforcement learning approach,” IEEE Trans.
+ [2] A. Humayed, J. Lin, F. Li, and B. Luo, “Cyber-physical systems secu-               Smart Grid, vol. 10, no. 5, pp. 5174–5185, Sep. 2019.
+     rity: A survey,” IEEE Internet Things J., vol. 4, no. 6, pp. 1802–1831,       [26] F. Van Wyk, Y. Wang, A. Khojandi, and N. Masoud, “Real-time sensor
+     Dec. 2017.                                                                         anomaly detection and identification in automated vehicles,” IEEE Trans.
+ [3] W. Ao, Y. Song, and C. Wen, “Distributed secure state estimation and               Intell. Transp. Syst., vol. 21, no. 3, pp. 1264–1276, Mar. 2020.
+     control for CPSs under sensor attacks,” IEEE Trans. Cybern., vol. 50,
+                                                                                   [27] A. R. Cassandra, “A survey of POMDP applications,” in Proc. Work.
+     no. 1, pp. 259–269, Jan. 2020.
+                                                                                        Notes AAAI Fall Symp. Planning Partially Observable Markov Decis.
+ [4] Y. Xu, M. Fang, Y.-J. Pan, K. Shi, and Z.-G. Wu, “Event-triggered
+                                                                                        Processes, 1998, pp. 1–9.
+     output synchronization for nonhomogeneous agent systems with peri-
+                                                                                   [28] R. S. Sutton and A. G. Barto, Reinforcement Learning: An Introduction.
+     odic denial-of-service attacks,” Int. J. Robust Nonlinear Control, vol. 31,
+                                                                                        Cambridge, MA, USA: MIT Press, 2018.
+     no. 6, pp. 1851–1865, 2021.
+ [5] Z. Ye, D. Zhang, and Z.-G. Wu, “Adaptive event-based tracking control         [29] T. T. Nguyen, N. D. Nguyen, and S. Nahavandi, “Deep reinforce-
+     of unmanned marine vehicle systems with DoS attack,” J. Franklin Inst.,            ment learning for multiagent systems: A review of challenges, solutions,
+     vol. 358, no. 3, pp. 1915–1939, 2021.                                              and applications,” IEEE Trans. Cybern., vol. 50, no. 9, pp. 3826–3839,
+ [6] Z. Lian, P. Shi, C.-C. Lim, and X. Yuan, “Fuzzy-model-based lat-                   Sep. 2020.
+     eral control for networked autonomous vehicle systems under hybrid            [30] H. Van Hasselt, A. Guez, and D. Silver, “Deep reinforcement learn-
+     cyber-attacks,” IEEE Trans. Cybern., early access, Mar. 14, 2022,                  ing with double Q-learning,” in Proc. AAAI Conf. Artif. Intell., vol. 30,
+     doi: 10.1109/TCYB.2022.3151880.                                                    Feb. 2016. pp. 2094–2100,
+ [7] G. Wu, J. Sun, and J. Chen, “Optimal data injection attacks in cyber-         [31] G. Ellis, Control System Design Guide: Using Your Computer
+     physical systems,” IEEE Trans. Cybern., vol. 48, no. 12, pp. 3302–3312,            to Understand and Diagnose Feedback Controllers. Oxford, U.K.:
+     Dec. 2018.                                                                         Butterworth-Heinemann, 2012.
+ [8] Z. Zhao, Y. Huang, Z. Zhen, and Y. Li, “Data-driven false data-injection      [32] L. P. Kaelbling, M. L. Littman, and A. W. Moore, “Reinforcement
+     attack design and detection in cyber-physical systems,” IEEE Trans.                learning: A survey,” J. Artif. Intell. Res., vol. 4, pp. 237–285, May 1996.
+     Cybern., vol. 51, no. 12, pp. 6179–6187, Dec. 2021.                           [33] R. Bellman, “Dynamic programming,” Science, vol. 153, no. 3731,
+ [9] Z. Zhang, S. Huang, F. Liu, and S. Mei, “Pattern analysis of topological           pp. 34–37, 1966.
+     attacks in cyber-physical power systems considering cascading outages,”       [34] F. S. Melo, S. P. Meyn, and M. I. Ribeiro, “An analysis of reinforcement
+     IEEE Access, vol. 8, pp. 134257–134267, 2020.                                      learning with function approximation,” in Proc. 25th Int. Conf. Mach.
+[10] S. Xiao, X. Ge, Q.-L. Han, and Y. Zhang, “Distributed resilient estima-            Learn., 2008, pp. 664–671.
+     tor design for positive systems under topological attacks,” IEEE Trans.       [35] L. Chrisman, “Reinforcement learning with perceptual aliasing: The
+     Cybern., vol. 51, no. 7, pp. 3676–3686, Jul. 2021.                                 perceptual distinctions approach,” in Proc. AAAI, 1992, pp. 183–188.
+
+        Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+LIU et al.: FDI ATTACK DETECTION IN CPSs WITH UNKNOWN PARAMETERS                                                                                             7125
+
+
+
+[36] S. P. Singh, T. Jaakkola, and M. I. Jordan, “Learning without state-                                   Ya Zhang (Senior Member, IEEE) received the
+     estimation in partially observable Markovian decision processes,” in                                   B.S. degree in applied mathematics from the China
+     Proc. Mach. Learn., 1994, pp. 284–292.                                                                 University of Mining and Technology, Xuzhou,
+[37] T. Schaul, J. Quan, I. Antonoglou, and D. Silver, “Prioritized experience                              China, in 2004, and the Ph.D. degree in control engi-
+     replay,” in Proc. Int. Conf. Learn. Represent. (ICLR), 2016, pp. 1–21.                                 neering from Southeast University, Nanjing, China,
+[38] Z. Wei, M. S. Branicky, and S. M. Phillips, “Stability of networked                                    in 2010.
+     control systems,” IEEE Control Syst. Mag., vol. 21, no. 1, pp. 84–99,                                     She has been with Southeast University, where
+     Feb. 2001.                                                                                             she is currently a Professor since 2010. Her research
+[39] M. Marcus and H. Minc, A Survey of Matrix Theory and Matrix                                            interests include multiagent systems, reinforcement
+     Inequalities. vol. 14. New York, NY, USA: Courier Corp., 1992.                                         learning, and network security.
+[40] W. Jiang, G. Wen, Z. Peng, T. Huang, and A. Rahmani, “Fully distributed
+     formation-containment control of heterogeneous linear multiagent
+     systems,” IEEE Trans. Autom. Control, vol. 64, no. 9, pp. 3889–3896,
+     Sep. 2019.
+
+
+
+
+                         Kecheng Liu received the B.S. degree in automa-
+                         tion from Hohai University, Nanjing, Jiangsu, China,
+                         in 2015. He is currently pursuing the Ph.D. degree
+                         in control science and engineering with Southeast
+                         University, Nanjing.
+                            His current research interests include attack detec-
+                         tion and reinforcement learning.
+
+
+
+
+                                                                                                            Changyin Sun (Senior Member, IEEE) received
+                                                                                                            the B.S. degree in applied mathematics from
+                                                                                                            the College of Mathematics, Sichuan University,
+                                                                                                            Chengdu, China, in 1996, and the M.S. and Ph.D.
+                         Hui Zhang is currently pursuing the Ph.D.                                          degrees in electrical engineering from Southeast
+                         degree in electronic and information with Southeast                                University, Nanjing, China, in 2001 and 2004,
+                         University, Nanjing, Jiangsu, China.                                               respectively.
+                            He works with the Jiangsu Automation Research                                      He is currently a Professor with the School
+                         Institute, Lianyungang, Jiangsu, China. His current                                of Automation, Southeast University. His current
+                         research interests include multiagent systems and                                  research interests include intelligent control, flight
+                         reinforcement learning.                                                            control, and optimal theory.
+                                                                                     Prof. Sun is an Associate Editor of the IEEE T RANSACTIONS ON N EURAL
+                                                                                   N ETWORKS AND L EARNING S YSTEMS, Neural Processing Letters, and
+                                                                                   IEEE/CAA Journal of Automatica Sinica.
+
+
+
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:26:31 UTC from IEEE Xplore. Restrictions apply.
+

@@ -1,0 +1,1168 @@
+194                                                                                  IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+
+      Secure State Estimation Against Integrity Attacks:
+            A Gaussian Mixture Model Approach
+                  Ziyang Guo , Dawei Shi , Daniel E. Quevedo , Senior Member, IEEE, and Ling Shi
+
+
+   Abstract—We consider the problem of estimating the state of a                       social security or even loss of human lives, e.g., StuxNet mal-
+linear time-invariant Gaussian system using N sensors, where a                         ware [3], Maroochy water bleach [4].
+subset of the sensors can potentially be compromised by an adver-                         According to the available system knowledge, disclosure re-
+sary. In this case, locating the compromised sensors is of crucial im-
+portance for obtaining an accurate state estimate. Inspired by the                     sources and disruption resources of an adversary, different at-
+clustering algorithm in machine learning, we propose a Gaussian-                       tacks can be launched on the system [5]. Integrity attack, which
+mixture-model-based (GMM-based) detection mechanism. It clus-                          tampers the sensor measurement and compromises the data in-
+ters the local state estimate autonomously and provides a belief                       tegrity, is one particular category and has received considerable
+for each sensor, based on which measurements from different sen-                       research attention. There are a number of works focusing on spe-
+sors can be fused accordingly. When a subset of the sensors are
+under the optimal innovation-based deception attacks, we derive                        cific types of integrity attacks and aiming to design detection
+the remote estimation error covariance recursions under differ-                        schemes or build attack-resilient estimators [6]–[14]. False-data
+ent detection mechanisms, e.g., distributed χ2 false-data detector,                    injection attack with full system knowledge was considered in
+centralized χ2 false-data detector, and GMM-based detection al-                        two different scenarios for electric power grids and its stealth-
+gorithm. The performance of the proposed GMM-based detection
+                                                                                       iness was demonstrated numerically [6]. When the system pa-
+algorithm is further evaluated through average belief in the same
+attack scenario. Moreover, we discuss applications of GMM-based                        rameters were unknown for the attacker, a data-driven method
+detection algorithm on other attack scenarios, e.g., false-data in-                    was proposed to learn the operating subspace and launch attacks
+jection attack, replay attack, and -stealthy attack. Simulation ex-                   accordingly [7]. Moreover, the effect of false-data injection at-
+amples are provided to demonstrate the developed results.                              tack on state estimation of dynamic Gaussian systems was inves-
+   Index Terms—Secure sate estimation, Gaussian mixture model,                         tigated in [8]. Replay attack attempts to inject exogenous con-
+integrity attack, clustering.                                                          trol inputs and simultaneously repeat historical measurements
+                                                                                       to maintain stealthiness to the false-data detector. The feasibility
+                                                                                       conditions of such an attack were investigated in [9] and a water-
+                             I. INTRODUCTION
+                                                                                       mark authentication signal was introduced as a countermeasure
+       YBER-PHYSICAL systems (CPS) are systems that in-
+C      tegrate sensing, computing and control techniques with
+physical plants. Due to its widespread applications in critical
+                                                                                       in [10]. The trade-off between estimation quality and detection
+                                                                                       rate was studied in a stochastic game framework for replay at-
+                                                                                       tacks [11]. The innovation-based deception attack was initially
+infrastructures ranging from national power grids to personal                          studied in [12] for remote state estimation as an affine operation
+health monitoring systems, CPS security becomes a problem of                           on the innovation process, based on which the attack policy was
+growing importance [1]. Typically, sensors in CPS are vulner-                          generalized to an arbitrary function of the innovation sequence
+able to malicious attacks since in most cases they are spatially                       and the worst-case attack strategy was obtained [13]. Under dif-
+distributed and cannot be fully protected [2]. Any successful                          ferent information sets, three sequential data verification and
+attack may cause severe consequences on national economy,                              fusion procedures were proposed in [14] for multi-sensor sys-
+                                                                                       tems under innovation-based deception attacks.
+  Manuscript received December 11, 2017; revised July 13, 2018, September                 Note that it is difficult to determine the specific attack type
+26, 2018, and October 20, 2018; accepted October 26, 2018. Date of publication         in many scenarios. Hence, the development of attack detection
+November 1, 2018; date of current version November 30, 2018. The associate             and secure estimation policies which are applicable to different
+editor coordinating the review of this manuscript and approving it for publication
+was Dr. Pierre Borgnat. The work by Z. Guo and L. Shi was supported by                 attack scenarios is necessary. In [15], the problem of attack
+a Hong Kong RGC General Research Fund 16222716. The work by D. Shi                     detection and identification in CPS was characterized using
+was supported by National Natural Science Foundation of China under Grant              system-theoretic and graph-theoretic approaches and central-
+61503027. (Corresponding author: Dawei Shi.)
+  Z. Guo and L. Shi are with the Department of Electronic and Computer                 ized and distributed attack detection and identification monitors
+Engineering, Hong Kong University of Science and Technology, Clear Water               were proposed. In [16], the maximum number of tolerable at-
+Bay, Kowloon, Hong Kong (e-mail:,zguoae@connect.ust.hk; eesling@ust.hk).               tacks that allow successful detection of a binary random state
+  D. Shi is with the Key Laboratory of Intelligent Control and Decision of
+Complex Systems, the MIIT Key Laboratory of Drive and Control of Motion                was characterized and the optimal detector was shown to be a
+Systems, and the School of Automation, Beijing Institute of Technology, Beijing        threshold rule. Similar results were obtained in the area of dis-
+100081, China (e-mail:,daweishi@bit.edu.cn).                                           tributed detection [17], [18] and accurate state reconstruction
+  D. E. Quevedo is with the Department of Electrical Engineering (EIM-E),
+Paderborn University, Paderborn, Germany (e-mail:,dquevedo@ieee.org).                  of noiseless dynamic systems [19], which was further extended
+  Digital Object Identifier 10.1109/TSP.2018.2879037                                   to systems with noise and modeling errors in [20], [21]. Since
+
+                          1053-587X © 2018 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                              See http://www.ieee.org/publications standards/publications/rights/index.html for more information.
+
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                            195
+
+
+
+
+                                                                                 If alarms are triggered at the distributed χ2 detector, then one
+                                                                                 simply removes those corrupted measurements and checks the
+                                                                                 remaining data through the centralized χ2 detector: If no alarm
+                                                                                 is triggered at the centralized χ2 detector, the remaining data
+                                                                                 will be fused at the remote estimator. Otherwise, it will be dis-
+                                                                                 carded. In this case, for those carefully designed attacks which
+                                                                                 are able to bypass the distributed χ2 detector, but fail to remain
+                                                                                 stealthy to the centralized χ2 detector (e.g., innovation-based
+                     Fig. 1.   System Block Diagram.                             deception attack [12], false-data injection attack [8] and reply
+                                                                                 attack [9]), the alarm triggered in the centralized χ2 detector
+locating the compromised sensors is intrinsically a combina-                     may result in a large performance degradation since uncon-
+torial problem, a satisfiability modulo theory based approach                    taminated information is discarded. Consequently, it is neces-
+for secure state estimation was proposed [22], where the scal-                   sary to develop a detection mechanism which is able to locate
+ability, soundness and completeness of the proposed algorithm                    the compromised sensor and is applicable to different attack
+were analyzed. In [23], transfer entropy based causality coun-                   scenarios.
+termeasures were investigated for both sensor measurements                          Inspired by the clustering algorithm in machine learning, we
+and innovation sequences. The countermeasures were shown                         propose a GMM-based detection mechanism for attack local-
+to be related to the system parameters, based on which the                       ization and secure state estimation in this work. Gaussian mix-
+convergence condition was analyzed and the effectiveness was                     ture model is a probabilistic model for representing normally
+evaluated. In [24], when a subset of the sensors were compro-                    distributed subpopulations within an overall population. In gen-
+mised by an adversary, a convex optimization based data fusion                   eral, it does not require knowing which subpopulation a data
+approach was adopted to combine the local estimates into a                       point belongs to, allowing the model to learn the subpopula-
+more secure state estimate. A more general convex optimiza-                      tions automatically, which constitutes a form of unsupervised
+tion based estimator with l1 penalty was considered in [25] and                  learning [35]. Hence, the proposed detection algorithm is able to
+sufficient and necessary conditions for resilience were analyzed                 divide the sensors into two categories autonomously and weight
+with a trivial gap. A finite-state stochastic modeling framework                 the measurements from different sensors with different beliefs,
+for secure state estimation was introduced in [26]. Further re-                  often leading to a satisfactory estimation performance. The main
+sults and developments related to attack detection and secure                    contributions of this paper are summarized as follows:
+state estimation can be found in [27]–[29].                                         1) We propose a GMM-based detection algorithm
+   In the current work, we consider the problem of estimating                           (Algorithm 1) when a subset of the sensors are under
+the state of a linear dynamical system when an unknown subset                           stealthy integrity attack. This method is effective to the
+of sensors may be corrupted by an adversary. The system archi-                          problem that the centralized χ2 false-data detector cannot
+tecture is shown in Fig. 1. Each sensor measures outputs of an                          locate the attacks in cases where the distributed χ2 false-
+underlying physical process and transmits noisy measurements                            data detector cannot detect their existence. To improve the
+to a remote estimator. There may exist a malicious attacker who                         performance and obtain a more accurate state estimate, we
+is capable to compromise a subset of the sensors and modify the                         propose a receding horizon GMM-based detection algo-
+transmitted data packets to degrade the estimation performance.                         rithm (Algorithm 2).
+In this case, to diagnose the existence of malicious attacks and                    2) We derive the remote estimation error covariance recur-
+obtain a secure state estimate, a distributed and a centralized                         sions under distributed χ2 false-data detector, central-
+false-data detector are equipped at the remote side. Many practi-                       ized χ2 false-data detector and GMM-based detection
+cal applications can be formulated as this system setup [30], such                      algorithm when a subset of the sensors are under the
+as autonomous vehicles [31], health monitoring systems [32],                            optimal innovation-based deception attack, respectively
+smart grid [33], etc. One specific example is autonomous driving                        (Theorem 1 and Theorem 2). Moreover, we provide ex-
+of vehicles. To perceive the environment and navigate without                           pressions for the average belief used to evaluate the perfor-
+much human input, different sensors are deployed on a vehicle                           mance of the proposed GMM-based detection algorithm
+to monitor the position, velocity, acceleration and other informa-                      (Theorem 3).
+tion. In such systems, data transmissions are performed through                     3) We discuss applications of the GMM-based detection al-
+wireless communication networks and malicious attacks may                               gorithm on other attack scenarios, namely, false-data in-
+lead to malfunction of the speed control or braking systems.                            jection attack, replay attack and -stealthy attack. Simu-
+For safety considerations, it is necessary to adopt efficient false-                    lation examples are also provided to compare the perfor-
+data detection schemes to ensure the data security and accuracy.                        mance of different detection mechanisms under different
+The classical χ2 false-data detector, which is widely used for                          attack scenarios.
+fault detection in the process industry and studied in the re-                      The remainder of the paper is organized as follows.
+search community [6], [8], [9], [11]–[14], [34], is considered                   Section II introduces the problem formulation. Section III pro-
+here. Specifically, if no alarm is triggered at both the distributed             poses the modified and receding horizon GMM-based detection
+and the centralized χ2 detectors, then the measurement data                      algorithms for secure state estimation. Section IV derives the
+are believed to be reliable and fused at the remote estimator.                   remote estimation error covariances and average belief for the
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+196                                                                                            IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+
+ Algorithm 1: Modified GMM for Secure State Estimation.                                           Algorithm 2: Receding Horizon GMM for Secure State
+  1: /*Reach steady state*/                                                                       Estimation.
+  2: Initialize x̂−∞,i = 0, P−∞,i = Πi , x̂−∞ = 0, P−∞ = Π;                                        1: /*Reach steady state*/
+  3: for k = −∞ : 0 do                                                                             2: Initialize x̂−∞,i = 0, P−∞,i = Πi , x̂−∞ = 0, P−∞ = Π,
+  4:     for i = 1 : N do                                                                              W;
+  5:          Pk ,i = [(APk −1,i A + Q)−1 + Ci Ri−1 Ci ]−1 ;                                     3: for k = −∞ : 0 do
+  6:          x̂k ,i = Ax̂k −1,i + Pk ,i Ci R−1                                                   4:     for i = 1 : N do
+                       (yk ,i − Ci Ax̂k −1,i );                                                    5:          Pk ,i = [(APk −1,i A + Q)−1 + Ci Ri−1 Ci ]−1 ;
+  7:     end for                                                                                   6:          x̂k ,i = Ax̂k −1,i + Pk ,i Ci R−1
+  8:     Pk = [(APk −1 A + Q)−1 + C  R−1 C]−1 ;                                                                       (yk ,i − Ci Ax̂k −1,i );
+  9:     x̂k = Ax̂k −1 + Pk C  R−1 (yk − CAx̂k −1 );                                              7:     end for
+ 10: end for                                                                                       8:     Pk = [(APk −1 A + Q)−1 + C  R−1 C]−1 ;
+ 11: /*GMM clustering and data fusion*/                                                            9:     x̂k = Ax̂k −1 + Pk C  R−1 (yk − CAx̂k −1 );
+                          (1)                                                                     10: end for
+ 12: Set Pi = P0,i , Σi = P0,i ;
+ 13: for k = 1 : ∞ do                                                                             11: /*Receding horizon GMM clustering and data fusion*/
+                                                                                                                           (1)
+ 14:     for i = 1 : N do                                                                         12: Set Pi = P0,i , Σi = P0,i ;
+ 15:          x̂k ,i = Ax̂k −1,i + Pi Ci Ri−1 (yk ,i − Ci Ax̂k −1,i );                           13: for k = 1 : ∞ do
+ 16:     end for                                                                                  14:     for i = 1 : N do
+ 17:
+                       (q )   (q )  (2)
+         Initialize πk , μk , Σk , where q = 1, 2;                                                15:          x̂k ,i = Ax̂k −1,i + Pi Ci Ri−1
+ 18:     while Termination condition not reached do                                                                     (yk ,i − Ci Ax̂k −1,i );
+ 19:          Expectation: for each i, compute                                                    16:     end for
+                                                                                                                        (q )   (q )  (2)
+                   (1)
+                                                   (1)              (1)  (1)
+                                                π k f ( x̂ k , i ;μ k ,Σ i )                      17:     Initialize πk , μj , Σk , where q = 1, 2, j ∈ J
+ 20:             γk ,i =        (1)               (1)  (1)           (2)       (2)  (2)    ;
+                              π k f ( x̂ k , i ;μ k ,Σ i )+π k f ( x̂ k , i ;μ k ,Σ k )                    with
+                  (2)         (1)
+ 21:             γk ,i = 1 − γk ,i ;                                                                   J = [k − W + 1 : k];
+ 22:             Maximization: re-estimate parameters as follows                                  18:     while Termination condition not reached do
+                              N
+                   (q )
+                                       (q )
+                                 i=1 γ k , i                                                      19:          Expectation: for each i, compute
+ 23:             πk       =                    ;                                                                 (1)
+                              NN    (q )                                                         20:          γk ,i =
+                  (q )         i=1 γ k , i x̂ k , i                                                                        (1) 
+ 24:             μk =          N         (q )     ;                                                                     πk
+                                                                                                                                                           (1)
+                                                                                                                                      j ∈J f ( x̂ j , i ;μ j ,Σ i
+                                                                                                                                                                   (1)
+                                                                                                                                                                       )
+                                  i=1 γ k , i                                                        (1)                         (1)     (1)          (2)                         (2)  (2)   ;
+                              N      (2)                 (2)              (2)                     πk       j ∈J f ( x̂ j , i ;μ j ,Σ i      )+π k            j ∈J f ( x̂ j , i ;μ j ,Σ k )
+                  (2)           i=1 γ k , i ( x̂ k , i −μ k )( x̂ k , i −μ k )
+ 25:             Σk =                           N          (2)                    ;              21:
+                                                                                                                        (2)
+                                                                                                                     γk ,i = 1 − γk ,i ;
+                                                                                                                                              (1)
+                                                      i=1 γ k , i
+ 26:        end while                                                                             22:                Maximization: re-estimate parameters as
+                                                           
+                                                           N
+                                                                   (1)                                                 follows
+ 27:        Pk = [(APk −1 A + Q)−1 +                            γk ,i Ci Ri−1 Ci ]−1 ;                                          (q ) N
+                                                                                                                        (q )            i=1 γ k , i
+                                                           i=1                                    23:                πk        =                      ;
+                                     
+                                     N                                                                                              NN    (q )
+                                            (1)
+ 28:        x̂k = Ax̂k −1 +                γk ,i Pk Ci Ri−1                                      24:
+                                                                                                                      (q )
+                                                                                                                     μj =            i=1 γ k , i x̂ j , i
+                                                                                                                                     N        (q )       ;
+                                     i=1                                                                                                i=1 γ k , i
+                                                                                                                                    N W
+                   (yk ,i − Ci Ax̂k −1 );                                                                                (2)
+                                                                                                                                                             (2)                 (2)              (2) 
+                                                                                                                                              j = k −W + 1 γ k , i ( x̂ j , i −μ j )( x̂ j , i −μ j )
+ 29: end for                                                                                      25:                Σk =             i=1
+                                                                                                                                                             N              (2)                          ;
+                                                                                                                                                          W       i=1 γ k , i
+                                                                                                  26:         end while
+                                                                                                                                                                    
+                                                                                                                                                                    N
+                                                                                                                                                                             (1)
+                                                                                                  27:         Pk = [(APk −1 A + Q)−1 +                                   γk ,i Ci Ri−1 Ci ]−1 ;
+                                                                                                                                                                    i=1
+                                                                                                                                            
+                                                                                                                                            N
+                                                                                                                                                   (1)
+proposed detection algorithm when a subset of the sensors are                                     28:         x̂k = Ax̂k −1 +                     γk ,i Pk Ci Ri−1
+                                                                                                                                            i=1
+under the optimal innovation-based deception attack. Numeri-                                                                       (yk ,i − Ci Ax̂k −1 );
+cal examples are also provided to demonstrate the developed re-                                   29: end for
+sults. Applications of GMM-based detection algorithm on other
+attack scenarios are discussed in Section V. Section V draws
+conclusions.                                                                                                                   II. PROBLEM FORMULATION
+   Notations: N and R denote the sets of positive integers and
+                                                                                                 A. Process Model
+real numbers, respectively. Rn is the n-dimensional Euclidean
+space. S+n    n
+           (S++  ) is the set of n × n positive semi-definite (def-                                Consider a networked system consisting of N sensors and
+inite) matrices. When X ∈ S+    n    n
+                                   (S++ ) , we simply write X ≥ 0                                one remote estimator as depicted in Fig 1. Each sensor i ∈ N 
+(X > 0). N (μ, Σ) denotes Gaussian distribution with mean                                        {1, 2, . . . , N } measures an output of a linear time-invariant
+μ and covariance matrix Σ. For a matrix X, Tr(X), X  and                                        process:
+X + (·) stand for the trace, transpose and X + X  , respec-                                                                       xk +1 = Axk + wk ,                                                    (1)
+tively. Diag{·} represents a block diagonal matrix. E[·] refers
+to the expectation of a random variable.                                                                                              yk ,i = Ci xk + vk ,i ,                                             (2)
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                            197
+
+
+
+where k ∈ N is the time index, xk ∈ Rn is the system state,                      which is known as the information-form Kalman filter. Similar
+and yk ,i ∈ Rm i is the measurement obtained sensor i. Both                      to 4 and 5, the local Kalman filter for sensor i, i = 1, 2 . . . , N
+wk ∈ Rn and vk ,i ∈ Rm i are zero-mean i.i.d. Gaussian noises                    can also be obtained.
+with E[wk wl ] = δk l Q (Q ≥ 0), E[vk ,i vl,j 
+                                                 ] = δij δk l Ri (Ri >              To simplify the subsequent discussion, we define the Lya-
+                                                                                                                         n        n
+0), E[wk vl,i ] = 0, ∀k, l ∈ N, i, j = 1, 2, . . . , N . The initial             punov and Riccati operators h, gi , g : S++ → S++    as
+state x0 is zero-mean Gaussian with covariance matrix Π0 > 0
+                                                                                              h(X)  AXA + Q,
+and independent of wk √   and vk ,i for all k ≥ 0. The pairs (A, Ci )
+are detectable, and (A, Q) is controllable.                                                  gi (X)  X − XCi (Ci XCi + Ri )−1 Ci X,
+   Remark 1: The system parameters (A, C, Q, R, Π0 ) are as-
+sumed to be known a priori. Typically, there are two ways to                                  g(X)  X − XC(CXC  + R)−1 CX.
+acquire these parameters: one is to obtain state-space models                       It is well known that the Kalman filter converges from any
+from specific physical problems [36]; the other is to adopt sys-                 initial condition
+                                                                                           √       exponentially fast when (A, Ci ) is detectable
+tem identification techniques to build mathematical models and                   and (A, Q) is controllable [38]. We denote the steady-state
+learn system parameters from observed input and output sig-                      values for the local and centralized Kalman filter as
+nals [37].                                                                                         Pi  lim Pk ,i , Pi−  lim Pk−,i ,                       (6)
+   Remark 2: According to [38], it is a combination of exper-                                            k →+∞                    k →+∞
+iment, analysis and pragmatism that suggests the Gaussian as-                                      P  lim Pk , P −  lim Pk− ,                             (7)
+sumption of the initial state. To be specific, experiments establish                                     k →+∞                   k →+∞
+that many naturally occurring processes are Gaussian; by mod-                    where Pi , Pi− , P and P − are the unique positive definite so-
+eling certain natural process as resulting from the sum of some                  lution of gi ◦ h(X) = X, h ◦ gi (X) = X, g ◦ h(X) = X and
+individual, possibly non-Gaussian processes, the central limit                   h ◦ g(X) = X, respectively. Without loss of generality, we as-
+theorem suggests an approximately Gaussian character for the                     sume that the system starts from the steady state with Pi,0 = Pi
+sum; and finally, the filtering problem is generally easier to solve             and P0 = P , which results in fixed-gain local and centralized
+with the Gaussian assumption. Hence, we assume that the initial                  Kalman filters, i.e.,
+state is zero-mean Gaussian distributed, i.e., x0 ∼ N (0, Π0 ).
+                                                                                            Ki = Pi Ci Ri−1 = Pi− Ci (Ci Pi− Ci + Ri )−1 ,
+B. Remote Estimator                                                                          K = P C  R−1 = P − C  (CP − C  + R)−1 .
+   At time instant k, each sensor transmits its local measurement
+to a remote estimator. By defining                                               C. False-Data Detectors
+                                                                                  To ensure the data integrity in CPS, a false-data detector is
+                yk  yk ,1 yk ,2 . . . yk ,N ,
+                                                                              usually adopted to monitor system behavior and detect the exis-
+                vk  vk ,1 vk ,2 . . . vk ,N ,                                tence of potential malicious attacks. Note that for a local Kalman
+                                                                              filter, the innovation zk ,i = yk ,i − Ci x̂−
+                                                                                                                             k ,i has a steady-state
+                C  C1 C2 . . . CN ,                                          Gaussian distribution N (0, Ci Pi− Ci + Ri ) and E[zk ,i zl,i
+                                                                                                                                             
+                                                                                                                                                ]=0
+                 R  Diag{R1 , R2 , . . . , RN },                                for all k = l [38]. For a centralized Kalman filter, the innova-
+                                                                                 tion zk = yk − C x̂−  k has a steady-state Gaussian distribution
+the overall measurement can be represented as                                    N (0, CP − C  + R) and E[zk zl ] = 0 for all k = l. Hence, the
+                           yk = Cxk + vk .                               (3)     statistical characteristics (mean and covariance) of the innova-
+To estimate the system state based on the received measure-                      tion sequence can be used to diagnose the system anomalies [39].
+ments, a Kalman filter is adopted at the remote estimator:                       Based on different information sets, the following distributed
+                                                                                 and centralized χ2 false-data detectors are considered.
+                   x̂−
+                     k = Ax̂k −1 ,                                                   In the distributed case, the false-data detector diagnoses the
+                  Pk− = APk −1 A + Q,                                           existence of cyber attacks by parallelly checking the sum of
+                                                                                 the normalized innovation sequence for every single sensor, i.e.,
+                  Kk = Pk− C  (CPk− C  + R)−1 ,                                at time k, the detection criterion of sensor i, i = 1, 2, . . . , N
+                   x̂k = x̂−                −
+                           k + Kk (yk − C x̂k ),
+                                                                                 follows the hypothesis test
+                                                                                                      k
+                                                                                                                                               H0
+                   Pk = (I − Kk C)Pk− ,                                                  gk ,i =                   
+                                                                                                                  zj,i (Ci Pi− Ci + Ri )−1 zj,i ≶ δi ,     (8)
+where x̂−
+        k and x̂k are the a priori and the a posteriori minimum                                    j =k −J i +1
+                                                                                                                                                H1
+
+mean squared error (MMSE) estimates of the state xk , and Pk−                    where Ji is the detection window size of sensor i, and δi is the
+and Pk are the corresponding estimation error covariances. The                   threshold of sensor i. The null hypothesis H0 means that the
+recursion starts from x̂0 = 0 and P0 = Π0 > 0. An alternative                    system is operating normally, while the alternative hypothesis
+form for the measurement update is                                               H1 means that the system is under attack. The normalized sum
+                   x̂k = x̂−        −1         −
+                           k + Pk C R (yk − C x̂k ),                     (4)     in (8) satisfies the χ2 distribution with mJ degrees of freedom.
+                                                                                 If gk ,i exceeds the threshold, the detector will trigger an alarm
+             (Pk )−1 = (Pk−−1 )−1 + C  R−1 C,                           (5)     and the measurement of sensor i will be dropped. Note that
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+198                                                                            IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+for a given threshold δi , a larger window size Ji leads to a                     tack, the centralized χ2 detector is able to know the existence
+more accurate detector but a slower response speed. For a given                   of the attack but fails to diagnose which sensor is under attack.
+window size Ji , the smaller the threshold δi , the lower the                     Motivated by the above observations, in this section, we pro-
+tolerance of the detector to the attack.                                          pose a GMM-based detection algorithm which is able to locate
+   In the centralized case, the false-data detector checks the                    the attack and yield a more secure and robust state estimate.
+system anomalies based on the innovation calculated by the                        Moreover, a receding horizon GMM-based detection algorithm
+centralized Kalman filter, i.e., at time k, the detection criterion               is proposed to improve the estimation performance.
+follows the hypothesis test                                                          Gaussian mixture model is a probabilistic model for repre-
+                    k                                                            senting normally distributed subpopulations within an overall
+                                                   H0
+          gk =            zj (CP − C  + R)−1 zj ≶ δ.          (9)               population. It is parameterized by two types of values, the mix-
+                                                           H1
+                   j =k −J +1                                                     ture component weights and the component means and covari-
+                                      2
+The normalized sum in (9) is χ distributed with mN J degrees                      ances. For a Gaussian mixture model with Q components, the
+of freedom. When gk exceeds the threshold, an alarm will be                       q-th component Gq has mean μ(q ) and covariance Σ(q ) . The
+triggered and all the measurements will be dropped.                               mixture component weightsQ are(qdefined  as π (q ) for component
+                                                                                                                    )
+                                                                                  Gq , with the constraint q =1 π = 1. In this case, the mixture
+D. Problem of Interest                                                            density can be represented as
+   Suppose that there exists an attacker who is able to modify                                                   Q
+                                                                                                                 
+the measurement data of the system described in the previous                                         p(x) =             p(x|Gq ) Pr(Gq )
+subsections. In practice, an attacker can launch such an integrity                                               q =1
+attack in different fashions. For example, it can change the phys-                                               Q
+                                                                                                                 
+ical environment to mislead the sensors or hack the on-board                                                 =          π (q ) f (x; μ(q ) , Σ(q ) ),       (10)
+sensor chip or manipulate the data packet during the sensor-                                                     q =1
+to-estimator transmission. The ability of an attacker in the real
+world is usually limited, so we assume that it can only compro-                   where      f (x; μ, Σ)  √          1
+                                                                                                                                exp(− 12 (x − μ) Σ−1 (x − μ))
+                                                                                                                    (2π ) n |Σ|
+mise a subset of the sensors. For convenience, we denote the set                  denotes the probability density function (pdf) for Gaussian ran-
+of compromised sensors as A with cardinality |A| = M < N                          dom variables.
+and the set of sensors without attacks as S with cardinality                         Note that in our problem, the local state estimate x̂k ,i follows
+|S| = N − M . The index set of malicious sensors is assumed                       different distributions when sensor i is uncorrupted or compro-
+to be time invariant. Without loss of generality, we also assume                  mised. The situation at hand can be described by the following
+that the attack starts from time k = 1. In this case, if the attack               2-component mixture model:
+can be detected by the distributed χ2 detector and no alarm is
+triggered at the centralized χ2 detector, the remote estimator                                               2
+                                                                                                             
+is able to remove those corrupted measurements and obtain a                                   p(x̂k ,i ) =          p(x̂k ,i |Gq ) Pr(Gq )
+relatively good estimate of the system state. However, if a care-                                            q =1
+
+fully designed attack can successfully bypass the distributed χ2                                        = π (1) p(x̂k ,i |G1 ) + π (2) p(x̂k ,i |G2 ).      (11)
+detector but fails to remain stealthy to the centralized χ2 de-
+tector, e.g., innovation-based deception attack [12], false-data                  According to Kalman filtering analysis [38], it can be shown
+injection attack [8] and reply attack [9], the alarm triggered                    that when sensor i is uncorrupted (namely, belongs to the first
+at the centralized χ2 detector will result in abandoning of all                   cluster), the local state estimate x̂k ,i is Gaussian distributed
+measurements, i.e., only performing a time update at the remote                                                                          (1)
+                                                                                  with fixed covariance Pi , i.e., p(x̂k ,i |G1 ) ∼ N (μk , Pi ), ∀i ∈
+estimator, since the centralized χ2 detector cannot locate the cor-               N . When sensor i is compromised by an adversary (namely,
+rupted measurements. This may lead to a large estimation error                    belongs to the second cluster), the exact distribution of local
+due to discarding uncontaminated information. To address this                     estimate x̂k ,i is unknown since we do not know the specific
+issue, we wish to find an effective detection mechanism which                     attack type and the attack starting time. In this case, we use
+is able to conquer the problem that the centralized χ2 detector                   the first and second moments to approximate the distribution
+cannot locate the attacks in cases where the distributed χ2 de-                   of all local estimates in the second cluster, i.e., p(x̂k ,i |G2 ) ∼
+tector cannot detect their existence. The detailed mathematical                         (2)    (2)
+                                                                                  N (μk , Σk ), ∀i ∈ N . Consequently, the mixture density (11)
+formulation and analysis of the proposed detection algorithm
+                                                                                  for the local state estimate x̂k ,i is further obtained as
+will be introduced in the following two sections.
+                                                                                                                                                 
+                                                                                                   (1)         (1)            (2)         (2)   (2)
+                                                                                   p(x̂k ,i ) = πk f x̂k ,i ; μk , Pi + πk f x̂k ,i ; μk , Σk .
+             III. GAUSSIAN MIXTURE MODEL BASED
+                    DETECTION ALGORITHM                                                                                                                     (12)
+   As discussed in the previous section, our interest lies in han-                   Based on the modified Gaussian mixture model (12), at
+dling situations where the malicious attacker is able to delib-                   each time k, we adopt expectation-maximization (EM) algo-
+erately design the corrupted data and successfully bypass the                     rithm [35], [40] to find the maximum likelihood estimates
+                                                                                                             (q ) (q ) (2)
+distributed χ2 detector. When a subset of sensors are under at-                   for the parameter Φk = {πk , μk , Σk }2q =1 using the data
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                             199
+
+
+
+
+Xk = {x̂k ,i }N
+              i=1 . The log likelihood is given as
+                                                                                 rithm, which is summarized in Algorithm 2. Different from
+L(Φk ; Xk )                                                                      Algorithm 1, at time k, a history of the local state estimates
+                                                                                 within time window [k − W + 1, k] are adopted by the false-
+      N
+                                                                          data detector to do clustering; see lines 14 to 26 of Algorithm 2.
+                 (1)           (1)       (2)           (2)  (2)
+  =         log πk f x̂k ,i ; μk , Pi + πk f x̂k ,i ; μk , Σk     .
+      i=1
+                                                                                      IV. PERFORMANCE ANALYSIS FOR INNOVATION-BASED
+                                                                 (13)
+                                                                                                   DECEPTION ATTACK
+The whole detection algorithm is summarized in Algorithm 1.
+To be specific, before time instant k = 0 (lines 2 to 10), the                      In this section, we consider the scenario where a subset
+remote estimator runs a Kalman filter and enters steady state.                   of sensors are under the optimal innovation-based deception
+Starting from time instant k = 1 (lines 12 to 29), the remote                    attack, and we analyze the remote estimation error covariance
+estimator clusters the local state estimates (lines 14 to 25) and                under a distributed χ2 detector, centralized χ2 detector and
+fuses measurement data using different weights (lines 27 and                     GMM-based detection algorithm, respectively. Moreover, we
+28). It can be observed that at each time instant k, the expectation             characterize the average belief for the GMM-based detection
+                           (q )
+step generates a belief γk ,i , which indicates the probability of               algorithm under the same attack scenario. In the subsequent
+sensor i belonging to component Gq . Then, the maximization                      discussions, we use the superscript to represent the quantities
+step re-estimates the parameters based on the belief obtained in                 in the presence of an attack.
+the expectation step. This iterative procedure maximizes the log
+likelihood in (13).                                                              A. Distributed χ2 False-Data Detector
+    Remark 3: For the case where the specific attack type and                       The innovation-based deception attack was studied in [12],
+the attack starting time are known a priori, the exact distribution              [13] under χ2 false-data detector for single-sensor systems.
+of the local state estimate x̂k ,i when sensor i is compromised                  Based on [12], [13], we consider such an attack in a multi-
+by the attacker can be obtained. In this case, we can directly use               sensor system (1)–(2) equipped with a distributed χ2 false-data
+the probability density function p(x̂k ,i |G2 ), ∀i ∈ N to model                 detector at the remote estimator and assume that only a subset
+the mixture density instead of approximating the distribution of                 of sensors are under attack. To be specific, when sensor i ∈ A is
+all local estimates in the second cluster to be Gaussian, which                  under the innovation-based deception attack, the attack policy
+leads to a better performance. To verify this point, we provide                  is defined as
+simulation examples in Section IV-D.
+    Remark 4: Note that we use local state estimates {x̂k ,i }N                                              z̃k ,i = fk ,i (zk ,i ),                       (14)
+                                                                  i=1
+instead of sensor measurements {yk ,i }N   i=1 to cluster the sensors            where zk ,i is the original innovation of sensor i, z̃k ,i is the
+although they are both Gaussian distributed in the absence of                    corrupted innovation provided by the malicious attacker, and
+attacks. The main reason is that when applying the EM algo-                      fk ,i (·) is an arbitrary function. To avoid being detected by the
+rithm to sensor measurements, it is difficult to obtain the closed-              distributed χ2 detector, the corrupted innovation z̃k ,i should pre-
+                           (2)         (2)
+form update rules for μk and Σk , i.e., lines 24 and 25 of                       serve the same distribution as zk ,i , i.e., z̃k ,i ∼ N (0, Ci Pi− Ci +
+Algorithm 1.                                                                     Ri ). Here, for each sensor i ∈ A, we simply adopt the optimal
+    Remark 5: The EM algorithm can be viewed as a special case                   innovation-based deception attack obtained in the single-sensor
+of the majorize-minimization (MM) algorithm. It maximizes                        scenario [13] in the form of
+a concave lower bound of the log likelihood (13). Therefore,
+                                                                                                                z̃k ,i = −zk ,i ,                           (15)
+it guarantees the convergence to a local optimum. However,
+the EM algorithm is sensitive to the initial condition. Heuristic                i.e., at each time instant k, the measurement of sensor i is mod-
+methods, e.g., k-means or l1 minimization, are usually used to                   ified from yk ,i to ỹk ,i such that the corrupted innovation z̃k ,i is
+initialize the parameters [35], [40].                                            the negative of the original innovation zk ,i . In this case, the dis-
+    Remark 6: It is worth noting that although the notation Pk                   tributed χ2 detector fails to diagnose the existence of the attack
+has been retained for simplicity in Algorithm 1, this quantity                   and the remote estimator uses the compromised measurement
+does not represent the covariance of the state estimation er-                    to update its estimate according to
+ror xk − x̂k any more, since the use of compromised data is                                    x̃−
+                                                                                                 k = Ax̃k −1 ,                                              (16)
+not taken into account in the recursion of this matrix. For a                                                       
+given attack type, the remote estimation error covariance can                                  x̃k = x̃−
+                                                                                                       k +P               Ci Ri−1 (ỹk ,i − Ci x̃−
+                                                                                                                                                 k)
+be approximately calculated. This will be illustrated in the next                                                   i∈A
+section.                                                                                                     
+   In Algorithm 1, the GMM-based detection algorithm classi-                                          +P            Cj Rj−1 (yk ,j − Cj x̃−
+                                                                                                                                          k ),              (17)
+                                                                                                             j ∈S
+fies the sensor based on the local state estimate at current time k.
+Intuitively, the more data that is available, the better the perfor-             where x̃−k and x̃k are the a priori and the a posteriori state esti-
+mance that can be obtained. Hence, to improve the performance                    mate at the remote estimator in the presence of an attack. Hence,
+of Algorithm 1, we enlarge the data set from Xk = {x̂k ,i }N   i=1 to            the remote state estimate will deviate from its true value x̂k , and
+XkW = {{x̂j,i }N     }k
+                 i=1 j =k −W +1  , with  W  being  the window    size,           the remote estimation error covariance under innovation-based
+and propose a receding horizon GMM-based detection algo-                         deception attack is obtained as follows.
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+200                                                                              IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+   Theorem 1: Consider the multi-sensor system (1)–(2) with                        innovation-based deception attack, we analyze the remote es-
+a distributed χ2 detector under the optimal innovation-based                       timation error covariance and evaluate the performance of the
+deception attack (15). When a subset A of the sensors are under                    GMM-based detection algorithm.
+                                                                                                  (1)
+attack, the estimation error covariance at the remote estimator                       Note that γk ,i obtained in Algorithm 1 is closely related to
+follows the recursion                                                              the measurement yk , which makes the calculation of the actual
+       P̃k = (I − KC)(AP̃k −1 A + Q)(I − KC) + KRK                              estimation error covariance at the remote estimator intractable.
+                                                                                                              (1)
+                                                                                  Hence, we assume that γk ,i and yk are uncorrelated and obtain
+            +    (I − KC)(Pkan  −    aa−      −1
+                              ,ci + Pk ,ci )Ci Ri Ci P                             an approximate remote estimation error covariance in the fol-
+               i∈A                                                                 lowing theorem. In fact, the difference between the approximate
+                                                                                  and the actual estimation error covariances, or equivalently the
+           +         P Ci Ri−1 Ci (Pkan −    aa− 
+                                       ,ci + Pk ,ci ) (I − KC)
+                                                              
+                                                                                                          (1)
+               i∈A
+                                                                                   correlation between γk ,i and yk , is negligible when the window
+                                                                                 size W is large enough. We will show this through simulation
+           +                                 n−
+                          P Ci Ri−1 Ci (Pkn,ij       a−
+                                                + Pkn,ij                           examples in the next subsection.
+               i∈A j ∈A                                                                Theorem 2: Consider the multi-sensor system (1)–(2) with
+                                                                                   the GMM-based detection algorithm (Algorithm 1) under the
+           + Pkan −    aa−      −1
+                ,ij + Pk ,ij )Cj Rj Cj P,                                 (18)
+                                                                                   optimal innovation-based deception attack (15). When a sub-
+where the definitions and iterations of Pkn,ij     n−       a−
+                                                      , Pkn,ij , Pkan −
+                                                                    ,ij ,          set A of the sensors are under attack, the approximate estimation
+  aa−     an −     aa−
+Pk ,ij , Pk ,ci , Pk ,ci are given in (30)–(35). The initial value of              error covariance at the remote estimator follows the recursion
+  nn−      n a−     an −        aa−
+P1,ij  , P1,ij  , P1,ij  and P1,ij  is the solution of                                P̃k = (I − Kk C)(AP̃k −1 A + Q)(I − Kk C) + Kk RKk
+ X = A(I − Ki Ci )X(I − Kj Cj )A + Q + δij AKi Ri Ki A ,                                  
+                                                                                           +    (I − Kk C)(Pkan  −    aa−      −1
+                                                                                                               ,ci + Pk ,ci )Ci Rk ,i Ci Pk
+                              an −       aa−
+and the initial value of P1,ci     and P1,ci  is the solution of                                i∈A
+                                                                                                
+                                          
+    X = A(I − KC)X(I − Ki Ci ) A + Q + AP Ci Ki A .                                      +         Pk Ci Rk−1,i Ci (Pkan −    aa−              
+                                                                                                                           ,ci + Pk ,ci ) (I − Kk C)
+      Proof: See Appendix.                                                                     i∈A
+                                                                                                
+                                                                                            +                                    n−
+                                                                                                           Pk Ci Rk−1,i Ci (Pkn,ij       a−
+                                                                                                                                    + Pkn,ij
+B. Centralized χ2 False-Data Detector
+                                                                                                i∈A j ∈A
+   In this subsection, we consider the scenario where a cen-
+                                                                                            + Pkan −    aa−      −1
+                                                                                                 ,ij + Pk ,ij )Cj Rk ,j Cj Pk ,                              (21)
+tralized χ2 detector is adopted together with the distributed χ2
+detector. When a subset A of the sensors are under the optimal                     where Kk  Pk C  Rk−1 with Rk−1  Diag{Rk−1,1 , . . . , Rk−1,N } =
+innovation-based deception attack (15), the corrupted innova-                                     (1)                (1)            (1)
+                                                                                                              −1
+                                                                                   Diag{R1−1 γk ,1 , . . . , RN  γk ,N } and γk ,i being the output of the
+tion z̃k cannot preserve the same distribution of the original                     GMM-based detection algorithm. Pk follows the recursion
+innovation zk due to the existence of the uncontaminated data.                                                                                          −1
+                                                                                                                                N
+                                                                                                                                
+As a result, an alarm will be triggered by the centralized χ2                                                         −1            (1)
+detector although the distributed χ2 detector fails to detect such                     Pk = (APk −1 A + Q)                  +       γk ,i Ci Ri−1 Ci        (22)
+                                                                                                                     i=1
+an attack. However, the centralized χ2 detector is only able to
+detect the existence of the attack rather than locating the attack.
+                                                                                                                    an −
+                                                                                   with initial condition P0 = P . Pk ,ci and Pkaa−
+                                                                                                                                 ,ci follow the re-
+Hence, the remote estimator will drop all the received measure-                    cursions (37)–(38) with the same initial values in Theorem 1.
+ments and perform a time update as follows:
+                                                                                       n−
+                                                                                   Pkn,ij , Pkn,ij
+                                                                                                a−
+                                                                                                    , Pkan −        aa−
+                                                                                                         ,ij and Pk ,ij follow the recursions (30)–(33)
+                                                                                   with the same initial values in Theorem 1.
+                           x̃k = Ax̃k −1 ,                                (19)         Proof: See Appendix.                                           
+                           P̃k = AP̃k −1 A + Q.                          (20)        To provide more analysis and insight into the GMM-based
+                                                                                   detection algorithm, we characterize the average belief of
+When the attack is sparse enough, the estimation error covari-
+                                                                                   Algorithm 1 when a subset A of the sensors are under the
+ance using both the centralized and distributed χ2 detector (20)
+                                                                                   optimal innovation-based deception attack (15). The obtained
+may be even larger than that using the distributed χ2 detector
+                                                                                   results are summarized in the following theorem, before which
+only (18). This is shown in simulation examples in the next
+                                                                                   the definition of the average belief and some other notations are
+section. Intuitively, performing time update loses a lot of useful
+                                                                                   introduced first.
+information when the attack is only launched on a small number                                   (1)
+                                                                                      Let E[γi ] be the belief that sensor i is uncontaminated
+of sensors.                                                                                  (2)
+                                                                                   and E[γi ] be the belief that sensor i is compromised. Then,
+                                                                                                       (1)        1
+                                                                                                                                (1)
+C. GMM-Based Detection Algorithm                                                   we define E[γS ] = N −M               i∈S E[γi ] as the average be-
+                                                                                   lief in the sensor being uncontaminated when it is indeed
+   To overcome the disadvantage of the centralized χ2 detec-                                                   (2)        1
+                                                                                                                                      (2)
+                                                                                   uncorrupted and E[γS ] = N −M                i∈S E[γi ] as the aver-
+tor and locate the compromised sensors, in this subsection we
+                                                                                   age belief in the sensor being compromised when it is ac-
+consider the case where the GMM-based detection algorithm                                                                         (1)              (1)
+is used at the remote estimator in addition to the distributed                     tually uncontaminated. Similarly, E[γA ] = M1             i∈A E[γi ]
+                                                                                             (2)                    (2)
+χ2 detector. When M out of N sensors are under the optimal                         and E[γA ] = M1           i∈A E[γi ] represent the average belief in
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                            201
+
+
+
+the sensor being uncontaminated and compromised, respec-
+tively, when it is corrupted by the attacker. Recall that for
+sensor i ∈ S, its steady-state estimation error covariance is
+denoted as Pi . According to [13], when senor j ∈ A is un-
+der the optimal innovation-based attack (15), its estimation er-
+ror covariance follows the recursion P̃k ,j = AP̃k −1 A + Q +
+3Pj− Cj (Cj Pj− Cj + Rj )−1 Cj Pj− with initial value P̃0,j = Pj .
+For stable systems, P̃k ,j converges to a steady-state value, which
+is denoted as P̃j . For unstable systems, P̃k ,j diverges to infinity
+as k increases. Thus, we choose a sufficiently large T and denote
+P̃j = P̃T ,j as its steady-state value.
+    Theorem 3: Consider the multi-sensor system (1)–(2) with
+the GMM-based detection algorithm (Algorithm 1) under the
+optimal innovation-based deception attack (15). When a sub-                      Fig. 2. Remote estimation error covariance using different detection mecha-
+set A of the sensors are under attack, the average belief that                   nisms when a stable system is under innovation-based deception attack.
+sensor i is not compromised is
+        (1)     1                         αf (ξi ; μ, Pi )
+    E[γS ] =
+                α        j ∈A i∈S αf (ξi ; μ, Pi ) + βf (ξi ; ν, Σ)
+                    i∈S
+
+               f (ξi ; 0, Pi ) dξi f (ζj ; 0, P̃j ) dζj                 (23)
+if i ∈ S, or
+       (1)      1                            βf (ζj ; μ, Pi )
+   E[γA ] =
+                β         j ∈A   i∈S αf (ζj ; μ, Pi ) + βf (ζj ; ν, Σ)
+                   j ∈A
+
+               f (ξi ; 0, Pi ) dξi f (ζj ; 0, P̃j ) dζj                 (24)
+                                                           
+   i ∈ A, where α = N− M , β = M , μ = α1 i∈S ξi , ν =
+if 
+ 1                    1                          
+β     j ∈A ζj and Σ = β     j ∈A (ζj − ν)(ζj − ν) . Moreover, the
+                                                      (2)
+average belief that sensor i is compromised is E[γS ] = 1 −
+     (1)                (2)              (1)                                     Fig. 3.   Average belief on each sensor using different detection mechanisms.
+E[γS ] if i ∈ S, or E[γA ] = 1 − E[γA ] if i ∈ A.
+   Proof: See Appendix.                                       
+                            (1)                (2)
+   Remark 7: Note that E[γS ] ∈ [0, 1] and E[γA ] ∈ [0, 1] can
+be adopted as a performance measure of the proposed GMM-
+based detection algorithm. The closer the values are to one, the
+better the performance.
+
+D. Simulation Example
+   In this subsection, we further evaluate the effectiveness of
+the GMM-based detection algorithm through numerical exam-
+ples and comparisons. To do this, we consider a linear time-
+invariant dynamic process which is measured by 20 sensors.
+The system parameters A, Q, Ci and Ri are randomly gen-
+erated from intervals [0.4, 0.99], [0.5, 2], [1, 2] and [1, 2], re-
+spectively, for all i ∈ N . Without loss of generality, we assume                Fig. 4. Receiver operating characteristic curve of GMM-based detection
+                                                                                 algorithm.
+that the first 5 sensors are under the optimal innovation-based
+deception attack. The receding horizon GMM-based algorithm
+(Algorithm 2) with window size W = 5 is used to cluster the                         The normalized estimation error covariances at the remote
+sensors. The detection window size and the false-alarm rate of                   estimator under different detection mechanisms are shown in
+both the distributed and centralized χ2 false-data detector are                  Fig. 2. When the system is equipped with the distributed χ2
+set as Ji = 5, ∀i ∈ N , J = 5 and 5%, respectively. The system                   false-data detector, centralized χ2 false-data detector and re-
+runs Kalman filter and enters steady state during time period                    ceding horizon GMM-based detection algorithm, the remote es-
+[1, 26]. The attack starts from time instant k = 27. In order to                 timation error covariances correspond to the red, green and blue
+show the robustness of the proposed algorithm, we report the                     lines in the figure, respectively. To facilitate the comparison,
+averaged results over 100 randomly generated systems in the                      we present the estimation error covariance of the GMM-based
+following, see Fig. 2 to Fig. 4.                                                 detection algorithm with prior information, namely, knowing
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+202                                                                            IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+the specific attack type and attack starting time, using a cyan-
+colored line. We also provide a performance lower bound for
+the GMM-based detection algorithm, i.e., running a Kalman
+filer based on all the uncontaminated sensors, using a magenta-
+colored line. All the theoretical values are plotted with solid lines
+while the empirical values are shown in dashed lines. It can be
+observed that the proposed GMM-based detection algorithm al-
+most achieve the performance bound, which is much better than
+the traditional distributed and centralized χ2 false-data detec-
+tors. Moreover, the estimation error covariance calculated using
+Theorem 2 provides a good approximation of its true value. Ac-
+tually, according to the simulation results, the approximate error
+covariance provides a performance upper bound of the GMM-
+based detection algorithm. It is also worth noting that the prior
+                                                                                  Fig. 5. Remote estimation error covariance of GMM-based detection algo-
+information, i.e., the specific attack type and attack starting time,             rithm with different window sizes when the first 5 sensors are under attack.
+leads to a better mixture model of local state estimate x̂k ,i , which
+further leads to a better estimation performance. However, the
+performance degradation without this (rather idealized) prior
+information is not significant, which indicates that the Gaussian
+approximation of the second cluster in (12) is reasonable.
+   The average belief on each sensor using different detection
+mechanisms is presented in Fig. 3. Since the optimal innovation-
+based deception attack strategy (15) preserves the Gaussian dis-
+tribution of the original innovation sequence, the distributed χ2
+false-data detector cannot detect the existence of the attack. As a
+result, the average belief in sensor i being compromised equals
+the false-alarm rate of the χ2 false-data detector for all i ∈ N ,
+which is consistent with Fig. 3. The centralized χ2 false-data
+detector is able to notice the existence of the attack due to the
+existence of uncorrupted data. However, it cannot locate the
+compromised sensors, which leads to a large alarm rate for each                   Fig. 6. Remote estimation error covariance of GMM-based detection algo-
+sensor, as shown in Fig. 3. The average beliefs of the proposed                   rithm with W = 5 when different number of sensors are compromised by the
+                                                                                  attacker.
+GMM-based detection algorithm and the GMM-based detec-
+tion algorithm with prior information are shown by the blue
+and red stems in the third subplot of Fig. 3, respectively. It can                uncontaminated, it is said to be “false positive”. There is no
+be observed that, even though the GMM-based detection algo-                       doubt that a smaller false positive rate and a larger true positive
+rithm with prior information performs slightly better than that                   rate are expected. Hence, the closer to the upper left corner of
+without prior information, both of them can successfully clus-                    the curve, the better the classification result. The ROC curve in
+ter the sensors into two categories, i.e., the belief in the sensor               Fig. 4 shows that the proposed GMM-based detection algorithm
+being compromised is high when it is indeed under attack and                      has a good performance in sensor clustering. When the specific
+is low when it is actually uncontaminated. This indicates that                    attack type and the attack starting time are known as a priori,
+  (2)       (2)
+γS and γA obtained in Theorem 3 can be adopted as a perfor-                       the performance of GMM-based detection algorithm becomes
+mance measure for the GMM-based detection algorithm. Our                          better.
+finding also illustrates why a smaller estimation error covari-                      Moreover, to evaluate the performance of the GMM-based
+ance in Fig. 2 can be obtained using the GMM-based detection                      detection algorithm, the remote estimation performance with
+algorithm.                                                                        respect to different window size and different number of com-
+   To provide more insights into the proposed GMM-based de-                       promised sensors are provided. In this case, we consider a sys-
+tection algorithm, its receiver operating characteristic curve is                 tem with parameters A = 0.7, Q = 1.2 and randomly gener-
+numerically evaluated by taking different values of a thresh-                     ated Ci ∈ [1, 2], Ri ∈ [0.5, 1.5] for all i ∈ N . Fig. 5 shows the
+                            (1)
+old η. Specifically, if γk ,i > η, we regard sensor i as a good                   normalized estimation error covariance of GMM-based detec-
+one. Otherwise, we believe that sensor i is compromised by                        tion algorithm with different window sizes when the first 5
+an adversary. When the threshold η takes different values in                      sensors are under optimal innovation-based deception attacks,
+the interval [0, 1], the true positive rate versus the false positive             while Fig. 6 shows the normalized estimation error covariance
+rate of the GMM-based detection algorithm with and without                        of GMM-based detection algorithm with W = 5 when different
+the prior information is shown in Fig. 4. “True positive” means                   number of sensors are compromised by the attacker. It can be
+that the algorithm believes the sensor is compromised when                        observed from Fig. 5 that both the approximate and empirical
+it is indeed compromised. However, if the sensor is actually                      estimation error covariances become smaller as the window size
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                             203
+
+
+
+
+Fig. 7. Remote estimation error covariance using different detection mecha-       Fig. 8. Remote estimation error covariance using different detection mecha-
+nisms when an unstable system is under innovation-based deception attack.         nisms when an unstable system is under false-data injection attack.
+
+
+increases. When the window size is large, they are close to the                   A. False-Data Injection Attack
+performance lower bound. It is also worth noting that the dif-                       We first investigate the performance of GMM-based detec-
+ference between the approximate and the empirical estimation                      tion algorithm when a subset of the sensors are under false-data
+                                                                (1)
+error covariances, or equivalently the correlation between γk ,i                  injection attack in this subsection. To do this, we consider a sys-
+and yk , becomes smaller as the window size becomes larger.                       tem with parameters A = 1, Q = 1.2 and randomly generated
+Hence, in practical applications, it is reasonable to assume that                 Ci ∈ [1, 2], Ri ∈ [0.5, 1.5] for all i ∈ N . According to Theorem
+  (1)
+γk ,i and yk are uncorrelated by choosing an appropriate win-                     2 in [8], for sensor i ∈ A, if the injected attack sequence yka ,i
+dow size. According to Fig. 6, the remote estimation quality of                   satisfies
+GMM-based detection algorithm remains good when less than                                                a
+                                                                                                        y0,i ≤ 1,
+half of the sensors are under attack. This is consistent to the
+                                                                                                                                     a
+results obtained in [19], [21], which claim that it is impossible                                                                   y0,i
+                                                                                                       yka +1,i = yka ,i + Ci Ki     a   ,
+to accurately reconstruct the state of a system if more than half                                                                   y0,i
+the sensors are attacked. It is also worth noting that knowing the                the system is perfectly attackable and the attack can be launched
+attack type and the attack starting time beforehand improves the                  stealthily under distributed χ2 false-data detector. However, due
+performance of GMM-based detection algorithm.                                     to the existence of the redundant information from sensor j ∈ S,
+    Finally, we consider the same attack scenario for an unsta-                   such an attack cannot bypass the centralized χ2 false-data detec-
+ble system with parameters A = 1.01, Q = 1.2, and randomly                        tor. When the alarm is triggered in the centralized χ2 detector,
+generated Ci ∈ [1, 2], Ri ∈ [0.5, 1.5] for all i ∈ N . The normal-                all the sensory data are dropped and the one-step predicted state
+ized estimation error covariances at the remote estimator under                   estimate is obtained at the remote estimator. To compare the
+different detection mechanisms are shown in Fig. 7. It can be                     above two detection mechanisms with the proposed GMM-
+observed that the estimation error goes to infinity when using the                based detection algorithm, we provide the normalized remote
+distributed and the centralized χ2 false-data detector, however,                  estimation error covariance in Fig. 8. Observed from the fig-
+it remains bounded under the GMM-based detection algorithm.                       ure, the estimation error under GMM-based detection algorithm
+Actually, it is pretty close to the performance lower bound, i.e.,                is almost the same as that of Kalman filter using all uncon-
+the Kalman filter based on all the uncorrupted sensors.                           taminated sensors, while the estimation error covariances under
+                                                                                  distributed and centralized χ2 detectors diverge to infinity ex-
+        V. APPLICATION ON OTHER ATTACK SCENARIOS                                  ponentially fast.
+   Although we focus on the innovation-based deception attack
+                                                                                  B. Replay Attack
+in the previous section, the proposed GMM-based detection
+algorithm can be applied to many other scenarios. Actually, the                      Replay attacks prevent the remote estimator from knowing
+GMM-based detection algorithm is expected to be effective for                     the true data and normally have two phase. In the first phase,
+almost all existing sparse integrity attacks [8], [9], [12], [41]                 the malicious attacker records the sensory data for a certain pe-
+which are undetectable using local detectors. Here, the local                     riod of time and replays the recorded data repeatedly during the
+detector may not be the distributed χ2 false-data detector (8); it                second phase. To evaluate the effectiveness of the proposed de-
+could be in other forms, e.g., the Kullback-Leibler divergence                    tection scheme, we consider a system with parameters A = 0.7,
+adopted in [41]–[43]. In this section, we discuss the application                 Q = 1.2 and randomly generated Ci ∈ [1, 2], Ri ∈ [0.5, 1.5] for
+of the proposed GMM-based detection algorithm on false-data                       all i ∈ N . According to [9], if A(I − Ki Ci ) is stable for sen-
+injection attack [8], replay attack [9], and -stealthy attack [41],              sor i ∈ A, the detection rate of distributed χ2 detector in the
+and evaluate its effectiveness through simulation examples.                       presence of attack will converge to the false alarm rate in the
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+204                                                                            IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+
+Fig. 9. Remote estimation error covariance using different detection mecha-       Fig. 10. Remote estimation error covariance using different detection mech-
+nisms when a stable system is under replay attack.                                anisms when a stable system is under -stealthy attack.
+
+
+absence of attack. Hence, replay attack is able to successfully                                               VI. CONCLUSION
+bypass the distributed χ2 false-data detector. The remote esti-                      This paper studies a secure state estimation problem when
+mation error covariances under different detection mechanisms                     a subset of sensors are compromised by a malicious attacker.
+when a subset of the sensors are under replay attack are shown                    To locate the compromised sensors and obtain an accurate state
+in Fig. 9. It can be observed that the GMM-based detection algo-                  estimate, a modified GMM-based detection algorithm was pro-
+rithm outperforms the distributed and centralized χ2 detectors                    posed. It was able to autonomously cluster the sensors and fuse
+significantly.                                                                    the measurements based on different beliefs. To further improve
+                                                                                  the performance, a receding horizon GMM-based detection al-
+C. -Stealthy Attack                                                              gorithm was developed. For the innovation-based deception at-
+                                                                                  tack, expressions for the remote estimation error covariance
+   Besides the distributed χ2 false-data detector, other criteria                 recursions under the distributed χ2 false-data detector, central-
+can be adopted as local detection schemes. Kullback-Leibler                       ized χ2 false-data detector and GMM-based detection algorithm
+divergence (KLD), a non-negative measure of the distance be-                      were obtained. Moreover, to evaluate the performance of the
+tween two probability distributions, is widely used in detection                  proposed GMM-based detection algorithm, its average belief
+theory [41]–[44]. In this subsection, we consider the scenario                    was characterized when a subset of sensors were under such an
+where the distributed and centralized χ2 detectors are replaced                   attack. Numerical simulations were provided to demonstrate the
+by the corresponding KLD. Similar to [41], KLD between the                        developed results. Finally, applications of the proposed GMM-
+corrupted innovation and the nominal innovation is adopted as                     based detection algorithm on other types of integrity attacks
+a stealthiness metric. In the distributed case, KLD detection                     were discussed and its effectiveness was demonstrated through
+criterion for sensor i ∈ N is defined as                                          simulation examples.
+                         1                      H0                                   The proposed GMM-based detection algorithm depends on
+                     lim   D(z̃1:k ,i z1:k ,i ) ≶ i ,
+                   k →+∞ k                      H1                                the perfect knowledge of the system parameters. For systems
+                                                                                  with parametric uncertainties, the estimation error covariance of
+where i is the threshold for sensor i and z1:k ,i stands for the in-             the Kalman filter becomes larger [45], which further degrades
+novation sequence {z1,i , z2,i , . . . , zk ,i }. In the centralized case,        the performance of the GMM-based detection algorithm.
+KLD detection criterion is defined as                                             Hence, the problem of developing a detection scheme which is
+                              1                   H0                              robust to uncertainties is worth investigating. Another possible
+                       lim        D(z̃1:k z1:k ) ≶ .                             direction of the future work is to apply the GMM-based
+                      k →+∞ k                     H1
+                                                                                  detection algorithm to detect intermittent attacks, where the
+If the attack sequence z̃1:k satisfies hypothesis H0 , the attack is              adversary has energy constraints and cannot launch attacks all
+called -stealthy. The optimal -stealthy attack policy that max-                 the time, or more intelligent attacks, where the adversary is
+imizes the remote estimation error covariance is investigated                     able to interact with the detector.
+in [41], based on which we set i =  = 0.1, ∀i ∈ N and con-
+sider a system with parameters A = 0.7, Q = 1.2 and randomly                                                       APPENDIX
+generated Ci ∈ [1, 2], Ri ∈ [0.5, 1.5] for all i ∈ N . The remote
+estimation error covariances under distributed KLD detection                      A. Proof of Theorem 1
+criterion, centralized KLD detection criterion and GMM-based                         Proof: When sensor i ∈ A is under the optimal innovation-
+detection algorithm are shown in Fig. 10. It can be observed                      based deception attack, the corrupted measurement satisfies
+that the estimation quality under the proposed GMM-based ap-
+proach is much better than that under KLD criteria.                                    ỹk ,i − Ci x̃−                                       −
+                                                                                                     k ,i = z̃k ,i = −zk ,i = −(yk ,i − Ci x̂k ,i ).        (25)
+
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                                      205
+
+
+
+According to (16)–(17), the a priori and the a posterior estima-                       Pkaa−                            − 
+                                                                                          ,ij  E[(xk − x̃k ,i )(xk − x̃k ,j ) ]
+tion error at the remote estimator can be obtained as
+                                                                                              = APkaa−                   n a−
+                                                                                                    −1,ij A + Q + AKi Ci Pk −1,ij A
+                                                                                                                                   
+
+  xk − x̃−
+         k = A(xk −1 − x̃k −1 ) + wk −1                                       (26)              + APkan −                  nn−         
+                                                                                                      −1,ij Cj Kj A + AKi Ci Pk −1,ij Cj Kj A
+                           
+  xk − x̃k = xk − x̃−
+                    k −P        Ci Ri−1 [Ci (xk − x̃−
+                                                     k)                                         + δij AKi Ri Ki A ,                                               (33)
+                                     i∈A
+                                                                                       Pkan −                        − 
+                                                                                          ,ci  E[(xk − x̃k )(xk − x̂k ,i ) ]
+                  − Ci (xk − x̂−                     −
+                                k ,i ) − Ci (xk − x̃k ,i ) − vk ,i ]
+                                                                                             = A(I − KC)Pkan    −                 
+                                                                                                                −1,ci (I − Ki Ci ) A + Q
+                  −P       Cj Rj−1 [Cj (xk − x̃−                                                                       
+                                                 k ) + vk ,j ]
+                        j ∈S
+                                                                                                − AP Ci Ki A + AP                       n−
+                                                                                                                           Cj Rj−1 Cj (Pkn−1,j i
+                                                                                                                                 j ∈A
+             = (I − KC)(xk − x̃−   k)                                                           + Pkan −                  
+                                                                                                     −1,j i )(I − Ki Ci ) A ,                                       (34)
+                   
+               +P     Ci Ri−1 Ci [(xk − x̂−                −
+                                           k ,i ) + (xk − x̃k ,i )]                    Pkaa−                         − 
+                                                                                          ,ci  E[(xk − x̃k )(xk − x̃k ,i ) ]
+                        i∈A
+                                                                                           = A(I − KC)Pkaa−                       an −      
+                                                                                                              −1,ci A +A(I − KC)Pk −1,ci Ci Ki A
+                  +P           Ci Ri−1 vk ,i − P          Cj Rj−1 vk ,j ,   (27)                                       
+                        i∈A                         j ∈S                                       + AP Ci Ki A + Q + AP                     a−
+                                                                                                                            Cj Rj−1 Cj (Pkn−1,j i
+                                                                                                                                         j ∈A
+where the second equality follows from (25). Based on
+(26)–(27), the estimation error covariance at the remote                                        + Pkaa−        nn−             an −           
+                                                                                                     −1,j i + Pk −1,j i Ci Ki + Pk −1.j i Ci Ki )A .                (35)
+estimator can be represented as
+                                                                                     Since the attack starts from steady state, the initial value of recur-
+ P̃k− = APk −1 A + Q,                                                        (28)   sions (30)–(33) is the steady-state value of E[(xk − x̂k ,i )(xk −
+                                                                                     x̂−     
+                                                                                       k ,j ) ], which corresponds the solution of X = A(I −
+  P̃k = (I − KC)P̃k− (I − KC) + KRK                                                Ki Ci )X(I − Kj Cj ) A + Q + δij AKi Ri Ki A . The initial
+                                                                                    value of recursions (34)–(35) is the steady-state value of
+        +     (I − KC)(Pkan  −    aa−      −1
+                           ,ci + Pk ,ci )Ci Ri Ci P + (·)
+                                                         
+                                                                                     E[(xk − x̂k )(xk − x̂−       
+                                                                                                            k ,i ) ], which corresponds the solution of
+            i∈A                                                                      X = A(I − KC)X(I − Ki Ci ) A + Q + AP Ci Ki A .                
+            
+        +                                 n−
+                       P Ci Ri−1 Ci (Pkn,ij       a−
+                                             + Pkn,ij
+            i∈A j ∈A                                                                 B. Proof of Theorem 2
+        + Pkan −    aa−      −1
+             ,ij + Pk ,ij )Cj Rj Cj P.                                        (29)      Proof: When a subset A of the sensors are under the optimal
+                                                                                     innovation-based deception attack, according to the update rules
+Due to (27) and the fact that                                                        used at the remote estimator in Algorithm 1, the state estimation
+     xk − x̂−                              −
+            k ,i = A(I − Ki Ci )(xk −1 − x̂k −1,i ) + wk −1
+                                                                                     error under GMM-based detection algorithm can be represented
+                                                                                     as
+                     − AKi vk −1,i ,
+                                                                                       xk − x̃−
+                                                                                              k = A(xk −1 − x̃k −1 ) + wk −1 ,
+     xk − x̃−                  −
+            k ,i = A(xk −1 − x̃k −1,i ) + wk −1                                                                   (1)
+                                                                                       xk − x̃k = xk − x̃−
+                                                                                                         k − Pk       γk ,i Ci Ri−1 [Ci (xk − x̃−
+                                                                                                                                                 k)
+                     + AKi Ci (xk −1 − x̂−
+                                         k −1,i ) + AKi vk −1,i ,                                                          i∈A
+
+it can be easily obtained that                                                                      − Ci (xk − x̂−                   −
+                                                                                                                 k ,i ) − Ci (xk − x̃k ,i ) − vk ,i ]
+                                                                                                           
+    n−
+Pkn,ij  E[(xk − x̂k ,i )(xk − x̂−     
+                                 k ,j ) ]                                                           − Pk
+                                                                                                                   (1)
+                                                                                                                  γk ,j Cj Rk−1,j [Cj (xk − x̃−
+                                                                                                                                               k ) + vk ,j ]
+                          n−
+        = A(I − Ki Ci )Pkn−1,ij (I − Kj Cj ) A + Q                                                       j ∈S
+
+          + δij AKi Ri Ki A ,                                               (30)               = (I − Kk C)(xk − x̃−    k)
+                                                                                                        
+     a−
+ Pkn,ij  E[(xk − x̂k ,i )(xk − x̃−     
+                                  k ,j ) ]                                                         + Pk    Ci Rk−1,i Ci [(xk − x̂−                −
+                                                                                                                                  k ,i ) + (xk − x̃k ,i )]
+                                                                                                           i∈A
+                          a−
+        = A(I − Ki Ci )Pkn−1,ij A + Q                                                                                                     
+          + A(I − Ki Ci )Pkn−1,ij
+                            n−
+                                  Cj Kj A − δij AKi Ri Ki A ,                                  + Pk          Ci Rk−1,i vk ,i − Pk            Cj Rk−1,j vk ,j , (36)
+                                                                                                           i∈A                              j ∈S
+                                                              (31)
+ Pkan −                           −                                                 where     Kk = Pk C  Rk−1 ,          Rk−1 = Diag{Rk−1,1 , . . . , Rk−1,N } =
+    ,ij  E[(xk − x̃k ,i )(xk − x̂k ,j ) ]
+                                                                                                  (1)                (1)           (1)
+        = APkan −                
+                                                                                                                −1
+                                                                                     Diag{R1−1 γk ,1 , . . . , RN  γk ,N }, γk ,i is calculated according
+              −1,ij (I − Kj Cj ) A + Q
+                                                                                     to Algorithm 1, and Pk evolves according to (22). Similar to
+                      n−
+          + AKi Ci Pkn−1,ij (I − Kj Cj ) A − δij AKi Ri Ki A ,                   the proof of Theorem 1, it can be obtained that the remote
+                                                             (32)                    estimation error covariance follows 21. One difference is the
+
+      Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+206                                                                                   IEEE TRANSACTIONS ON SIGNAL PROCESSING, VOL. 67, NO. 1, JANUARY 1, 2019
+
+
+
+
+recursions of Pkan −      aa−
+                 ,ci and Pk ,ci now become
+                                                                                        when sensor i ∈ S, which is the same as (23). Similarly, the
+                                                                                                                                         (1)
+                                                                                        average belief that sensor i is under attack, E[γA ], when sensor
+ Pkan −                       an −              
+    ,ci = A(I − Kk −1 C)Pk −1,ci (I − Ki Ci ) A + Q                                     i ∈ A can be obtained in the form of (24).                     
+             (1)
+                                               
+          − γk −1,i APk −1 Ci Ki A + APk −1     Cj Rk−1−1,j Cj
+                                                               j ∈A
+                                                                                                                    ACKNOWLEDGMENT
+                      n−
+                × (Pkn−1,j      an −                   
+                           i + Pk −1,j i )(I − Ki Ci ) A ,                     (37)        The authors would like to thank the Associate Editor and
+                                       (1)                                              the anonymous reviewers for their suggestions which have im-
+  Pkaa−                   aa−                          
+     ,ci = A(I − Kk −1 C)Pk −1,ci A + γk −1,i APk −1 Ci Ki A                            proved the quality of the work.
+                + Q + A(I − Kk −1 C)Pkan    −       
+                                          −1,ci Ci Ki A
+                         
+                + APk −1                        a−
+                           Cj Rk−1−1,j Cj (Pkn−1,j      aa−
+                                                    i + Pk −1,j i
+                                                                                                                            REFERENCES
+                               j ∈A                                                      [1] K. Kim and P. R. Kumar, “Cyber–physical systems: A perspective at the
+                                                                                             centennial,” Proc. IEEE (Special Centennial Issue), vol. 100, pp. 1287–
+                     n−
+                + Pkn−1,j          an −           
+                          i Ci Ki + Pk −1.j i Ci Ki )A ,                       (38)          1308, May 2012.
+                                                                                         [2] A. Vempaty, O. Ozdemir, K. Agrawal, H. Chen, and P. K. Varshney, “Lo-
+since the remote estimator no longer adopts the steady-state gain                            calization in wireless sensor networks: Byzantines and mitigation tech-
+to update its estimates.                                                                    niques,” IEEE Trans. Signal Process., vol. 61, no. 6, pp. 1495–1508,
+                                                                                             Mar. 2013.
+                                                                                         [3] J. P. Farwell and R. Rohozinski, “Stuxnet and the future of cyber war,”
+C. Proof of Theorem 3                                                                        Survival, vol. 53, no. 1, pp. 23–40, 2011.
+                                                                                         [4] J. Slay and M. Miller, “Lessons learned from the Maroochy water breach,”
+    Proof: To evaluate the performance of Algorithm 1 under the                              in Proc. Int. Conf. Crit. Infrastructure Protection, 2007, pp. 73–82.
+optimal innovation-based attack, we denote x̂i as a sample data                          [5] A. Teixeira, I. Shames, H. Sandberg, and K. H. Johansson, “A secure
+                                                                                             control framework for resource-limited adversaries,” Automatica, vol. 51,
+from Gaussian distribution N (xk , Pi ) for all i ∈ S and x̃j as a                           pp. 135–148, 2015.
+sample data from Gaussian distribution N (xk , P̃j ) for all j ∈ A.                      [6] Y. Liu, P. Ning, and M. K. Reiter, “False data injection attacks against state
+                                                                                             estimation in electric power grids,” ACM Trans. Inf. Syst. Secur., vol. 14,
+Note that the EM algorithm maximizes likelihood and converges                                no. 1, 2011, Art. no. 13.
+to a local optimum. Hence, we assume that the GMM-based de-                              [7] J. Kim, L. Tong, and R. J. Thomas, “Subspace methods for data attack on
+tection algorithm converges to its optimal solution, i.e., the sam-                          state estimation: A data driven approach,” IEEE Trans. Signal Process.,
+                                                                                             vol. 63, no. 5, pp. 1102–1114, Mar. 2015.
+ple mean and sample variance of each cluster, which is denoted
+              1
+                                 (1)                                                   [8] Y. Mo and B. Sinopoli, “False data injection attacks in control systems,”
+as μ(1) = N −M        i∈S x̂i , Σi     = Pi , μ(2) = M1      j ∈A x̃j , and                  in Proc. 1st Workshop Secure Control Syst., CPS Week, 2010.
+            
+Σ(2) = M1          (x̃
+               j ∈A j   −  μ  (2)
+                                  )(x̃j − μ (2) 
+                                               )  . In this case,  the be-               [9] Y. Mo and B. Sinopoli, “Secure control against replay attacks,” in
+                                                                                             Proc. 47th Annu. Allerton Conf. Commun., Control, Comput., 2009,
+lief of being uncorrupted for each sensor i ∈ S can be obtained                              pp. 911–918.
+as                                                                                      [10] Y. Mo, S. Weerakkody, and B. Sinopoli, “Physical authentication of con-
+                                                                                             trol systems: Designing watermarked control inputs to detect counterfeit
+       (1)
+ E[γi ] =                                                                                    sensor outputs,” IEEE Control Syst., vol. 35, no. 1, pp. 93–109, Feb.
+                                                                                             2015.
+                                                                (1)                     [11] F. Miao, M. Pajic, and G. J. Pappas, “Stochastic game approach for re-
+                                         π (1) f (x̂i ; μ(1) , Σi )
+      ×                                          (1)
+                                                                                             play attack detection,” in Proc. 52nd IEEE Conf. Decis. Control, 2013,
+              j ∈A    i∈S π (1) f (x̂i ; μ(1) , Σi ) + π (2) f (x̂i ; μ(2) , Σ(2) )          pp. 1854–1859.
+                                                                                        [12] Z. Guo, D. Shi, K. H. Johansson, and L. Shi, “Optimal linear cyber-attack
+      f (x̂i ; xk , Pi )dx̂i f (x̃j ; xk , P̃j )dx̃j ,                         (39)          on remote state estimation,” IEEE Trans. Control Netw. Syst., vol. 4, no. 1,
+                                                                                             pp. 4–13, Mar. 2017.
+                                                                                        [13] S. Wu, Z. Guo, D. Shi, K. H. Johansson, and L. Shi, “Optimal innovation-
+where π       (1)       −M
+                     = NN  , π (2) = M
+                                     N , and the integral is taken with                      based deception attack on remote state estimation,” in Proc. Amer. Control
+respect to every i ∈ S and every j ∈ A. By changing variables,                               Conf., 2017, pp. 3017–3022.
+one has                                                                                 [14] Y. Li, L. Shi, and T. Chen, “Detection against linear deception attacks on
+                                                                                             multi-sensor remote state estimation,” IEEE Trans. Control Netw. Syst.,
+        (1)
+ E[γi ]                                                                                      vol. 5, no. 3, pp. 846–856, Sep. 2018.
+                                                                                        [15] F. Pasqualetti, F. Dörfler, and F. Bullo, “Attack detection and identification
+                                                         (1)    (1)                          in cyber-physical systems,” IEEE Trans. Autom. Control, vol. 58, no. 11,
+                                          π (1) f (yi ; μy , Σi )
+       =                                 (1)  (1)                  (2)
+                                                                                             pp. 2715–2729, Nov. 2013.
+              j ∈A    i∈S π (1) f (yi ; μy , Σi ) + π (2) f (yi ; μy , Σ(2) )           [16] Y. Mo, J. P. Hespanha, and B. Sinopoli, “Resilient detection in the presence
+                                                                                             of integrity attacks,” IEEE Trans. Signal Process., vol. 62, no. 1, pp. 31–43,
+                                                                                             Jan. 2014.
+      f (yi ; 0, Pi )dyi f (yj ; 0, P̃j )dyj ,                         (40)             [17] S. Marano, V. Matta, and L. Tong, “Distributed detection in the presence of
+                            (1)         1
+                                                          (1)                               byzantine attacks,” IEEE Trans. Signal Process., vol. 57, no. 1, pp. 16–29,
+where yi = x̂i − xk , μy = N −M                 i∈S yi = μ     − xk , yj =                   Jan. 2009.
+                 (2)     1
+                                              (2)                                      [18] B. Kailkhura, Y. S. Han, S. Brahma, and P. K. Varshney, “Distributed
+x̃j − xk and μy = M             j ∈A yj = μ        − xk . Then, taking av-                   Bayesian detection in the presence of byzantine data,” IEEE Trans. Signal
+erage over all the sensors in subset S yields the average belief                             Process., vol. 63, no. 19, pp. 5250–5263, Oct. 2015.
+of being uncontaminated,                                                                [19] H. Fawzi, P. Tabuada, and S. Diggavi, “Secure estimation and control for
+                                                                                             cyber-physical systems under adversarial attacks,” IEEE Trans. Autom.
+                       (1)           1               (1)                                    Control, vol. 59, no. 6, pp. 1454–1467, Jun. 2014.
+                   E[γS ] =                       E[γi ],              (41)
+                                 N −M                                                   [20] M. Pajic et al., “Robustness of attack-resilient state estimators,” in Proc.
+                                                  i∈S                                        5th Int. Conf. Cyber-Physical Syst., 2014, pp. 163–174.
+
+
+
+        Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+GUO et al.: SECURE STATE ESTIMATION AGAINST INTEGRITY ATTACKS: A GAUSSIAN MIXTURE MODEL APPROACH                                                                 207
+
+
+
+[21] S. Mishra, Y. Shoukry, N. Karamchandani, S. N. Diggavi, and P. Tabuada,                                   Ziyang Guo received the B.Eng. degree (Hons.) from
+     “Secure state estimation against sensor attacks in the presence of noise,”                                the College of Control Science and Engineering,
+     IEEE Trans. Control Netw. Syst., vol. 4, no. 1, pp. 49–59, Mar. 2017.                                     Zhejiang University, Hangzhou, China, in 2014 and
+[22] Y. Shoukry, P. Nuzzo, A. Puggelli, A. L. Sangiovanni-Vincentelli, S.                                      the Ph.D. degree from the Department of Electronic
+     A. Seshia, and P. Tabuada, “Secure state estimation for cyber phys-                                       and Computer Engineering, Hong Kong University
+     ical systems under sensor attacks: A satisfiability modulo theory ap-                                     of Science and Technology, Kowloon, Hong Kong, in
+     proach,” IEEE Trans. Autom. Control, vol. 62, no. 10, pp. 4917–4932,                                      2018. From September 2016 to December 2016, she
+     Oct. 2017.                                                                                                was a visiting student in the School of Engineering
+[23] D. Shi, Z. Guo, K. H. Johansson, and L. Shi, “Causality countermeasures                                   and Applied Sciences, Harvard University. Her re-
+     for anomaly detection in cyber-physical systems,” IEEE Trans. Autom.                                      search interests include cyber-physical system secu-
+     Control, vol. 63, no. 2, pp. 386–401, Feb. 2018.                                                          rity, networked state estimation, and wireless sensor
+[24] Y. Mo and E. Garone, “Secure dynamic state estimation via local estima-                                    networks.
+     tors,” in Proc. IEEE 55th Conf. Decis. Control, 2016, pp. 5073–5078.
+[25] D. Han, Y. Mo, and L. Xie, “Resilience and performance analysis for state
+     estimation against integrity attacks,” IFAC-PapersOnLine, vol. 49, no. 22,                                Dawei Shi received the B.Eng. degree in electrical
+     pp. 55–60, 2016.                                                                                          engineering and its automation from the Beijing In-
+[26] D. Shi, R. J. Elliott, and T. Chen, “On finite-state stochastic modeling                                  stitute of Technology, Beijing, China, in 2008, and
+     and secure estimation of cyber-physical systems,” IEEE Trans. Autom.                                      the Ph.D. degree in control systems from the Univer-
+     Control, vol. 62, no. 1, pp. 65–80, Jan. 2017.                                                            sity of Alberta, Edmonton, AB, Canada, in 2014. In
+[27] J. He, P. Cheng, L. Shi, and J. Chen, “SATS: Secure average-consensus-                                    December 2014, he was appointed as an Associate
+     based time synchronization in wireless sensor networks,” IEEE Trans.                                      Professor at the School of Automation, Beijing Insti-
+     Signal Process., vol. 61, no. 24, pp. 6387–6400, Dec. 2013.                                               tute of Technology. From February 2017 to Jul 2018,
+[28] M. S. Chong, M. Wakaiki, and J. P. Hespanha, “Observability of linear                                     he was with the Harvard John A. Paulson School of
+     systems under adversarial attacks,” in Proc. IEEE Amer. Control Conf.,                                    Engineering and Applied Sciences, as a Postdoctoral
+     2015, pp. 2439–2444.                                                                                      Fellow in bioengineering. Since July 2018, he has
+[29] D. Shi, T. Chen, and M. Darouach, “Event-based state estimation of linear       been with the School of Automation, Beijing Institute of Technology, where
+     dynamic systems with unknown exogenous inputs,” Automatica, vol. 69,            he is currently a Professor. His research focuses on analysis and synthesis of
+     pp. 275–288, 2016.                                                              complex sampled-data control systems, with applications to biomedical engi-
+[30] A. Banerjee, K. K. Venkatasubramanian, T. Mukherjee, and S. K.                  neering, robotics and motion systems.
+     Gupta, “Ensuring safety, security, and sustainability of mission-critical
+     cyber-physical systems,” Proc. IEEE, vol. 100, no. 1, pp. 283–299,                                         Daniel E. Quevedo (S’97–M’05–SM’14) received
+     Jan. 2012.                                                                                                 Ingeniero Civil Electrónico and the M.Sc. degrees
+[31] C. Berger and B. Rumpe, “Autonomous driving-5 years after the urban                                        from the Universidad Técnica Federico Santa Marı́a,
+     challenge: The anticipatory vehicle as a cyber-physical system,” 2014,                                     Chile, in 2000 and the Ph.D. degree from the
+     arXiv:1409.0413.                                                                                           University of Newcastle, Callaghan, NSW, Aus-
+[32] I. Korhonen, J. Parkka, and M. Van Gils, “Health monitoring in the home                                    tralia. He is the Head of the Chair of Automatic
+     of the future,” IEEE Eng. Med. Biol. Mag., vol. 22, no. 3, pp. 66–73,                                      Control (Regelungs- und Automatisierungstechnik),
+     May/Jun. 2003.                                                                                             Paderborn University, Germany. He was supported by
+[33] Y. Mo et al., “Cyber–physical security of a smart grid infrastructure,”                                    a full scholarship from the alumni association during
+     Proc. IEEE, vol. 100, no. 1, pp. 195–209, 2012.                                                            his time at the Universidad Técnica Federico Santa
+[34] A. Pouliezos and G. S. Stavrakakis, Real Time Fault Monitoring of Indus-                                   Marı́a and received several university-wide prizes
+     trial Processes. Berlin, Germany: Springer Science & Business Media,            upon graduating. He received the IEEE Conference on Decision and Control
+     2013, vol. 12.                                                                  Best Student Paper Award in 2003 and was also a finalist in 2002. In 2009,
+[35] C. M. Bishop, Pattern Recognition and Machine Learning. Berlin,                 he was awarded a five-year Research Fellowship from the Australian Research
+     Germany: Springer, 2006.                                                        Council. He is an Associate Editor of the IEEE CONTROL SYSTEMS MAGAZINE,
+[36] K. J. Aström and R. M. Murray, Feedback Systems: An Introduction for           the Editor of the International Journal of Robust and Nonlinear Control, and
+     Scientists and Engineers. Princeton, NJ, USA: Princeton Univ. Press,            is the Chair of the IEEE Control Systems Society Technical Committee on
+     2010.                                                                           Networks & Communication Systems. His research interests include control of
+[37] G. C. Goodwin and R. L. Payne, Dynamic System Identification: Experi-           networked systems and power converters.
+     ment Design and Data Analysis. New York, NY, USA: Academic, 1977,
+     vol. 26.
+[38] B. D. Anderson and J. B. Moore, Optimal Filtering. Chelmsford, MA,                                        Ling Shi received the B.S. degree in electrical and
+     USA: Courier Corp., 2012.                                                                                 electronic engineering from Hong Kong University
+[39] R. K. Mehra and J. Peschon, “An innovations approach to fault detection                                   of Science and Technology, Kowloon, Hong Kong,
+     and diagnosis in dynamic systems,” Automatica, vol. 7, no. 5, pp. 637–640,                                in 2002 and the Ph.D. degree in control and dynami-
+     1971.                                                                                                     cal systems from California Institute of Technology,
+[40] T. K. Moon, “The expectation-maximization algorithm,” IEEE Signal                                         Pasadena, CA, USA, in 2008. He is currently an As-
+     Process. Mag., vol. 13, no. 6, pp. 47–60, Nov. 1996.                                                      sociate Professor with the Department of Electronic
+[41] C.-Z. Bai, V. Gupta, and F. Pasqualetti, “On Kalman filtering with compro-                                and Computer Engineering, Hong Kong University
+     mised sensors: Attack stealthiness and performance bounds,” IEEE Trans.                                   of Science and Technology. His research interests
+     Autom. Control, vol. 62, no. 12, pp. 6641–6648, Dec. 2017.                                                include cyber-physical systems security, networked
+[42] C.-Z. Bai, F. Pasqualetti, and V. Gupta, “Security in stochastic control sys-                             control systems, sensor scheduling, and event-based
+     tems: Fundamental limitations and performance bounds,” in Proc. Amer.           state estimation. He was an Editorial Board Member of The European Control
+     Control Conf., 2015, pp. 195–200.                                               Conference 2013–2016. He has been a Subject Editor for the International Jour-
+[43] Z. Guo, D. Shi, K. H. Johansson, and L. Shi, “Worst-case stealthy               nal of Robust and Nonlinear Control since March 2015, an Associate Editor
+     innovation-based linear attack on remote state estimation,” Automatica,         for the IEEE TRANSACTIONS ON CONTROL OF NETWORK SYSTEMS since July
+     vol. 89, pp. 117–124, 2018.                                                     2016, and an Associate Editor for the IEEE CONTROL SYSTEMS LETTERS since
+[44] H. V. Poor, An Introduction to Signal Detection and Estimation. Berlin,         February 2017. He was also an Associate Editor for a Special Issue on Secure
+     Germany: Springer Science & Business Media, 2013.                               Control of Cyber Physical Systems in the IEEE TRANSACTIONS ON CONTROL
+[45] Q. Ge, T. Shao, Z. Duan, and C. Wen, “Performance analysis of the Kalman        OF NETWORK SYSTEMS in 2015–2017. He is the General Chair of the 23rd
+     filter with mismatched noise covariances,” IEEE Trans. Autom. Control,          International Symposium on Mathematical Theory of Networks and Systems
+     vol. 61, no. 12, pp. 4014–4019, Dec. 2016.                                      (MTNS 2018).
+
+
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on May 06,2025 at 06:29:01 UTC from IEEE Xplore. Restrictions apply.
+

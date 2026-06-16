@@ -1,0 +1,540 @@
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\setlist[itemize]{leftmargin=2em}
+\setlist[enumerate]{leftmargin=2em}
+
+\newtheorem{assumption}{假设}
+\newtheorem{lemma}{引理}
+\newtheorem{theorem}{定理}
+\newtheorem{remark}{注}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\sgn}{\operatorname{sgn}}
+\newcommand{\sat}{\operatorname{sat}}
+\newcommand{\diag}{\operatorname{diag}}
+
+\title{DoS与FDI混合攻击下多飞行器弹性协同制导的处理思路}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{核心思想}
+
+本文考虑多飞行器协同打击同一目标时，通信网络同时遭受拒绝服务攻击
+(denial-of-service, DoS) 和虚假数据注入攻击 (false data injection, FDI) 的情况。
+DoS攻击使通信链路中断，飞行器无法获得邻居信息；FDI攻击则在通信链路仍然可用时篡改邻居信息。
+二者的物理表现不同，因此不宜使用同一种检测逻辑。本文建议将二者统一为
+``可信邻居信息重构''问题：先判断链路是否可用，再判断收到的信息是否可信，最后将重构后的有效邻居信息送入协同制导律。
+
+该思路可概括为
+\[
+\text{邻居信息}
+\rightarrow
+\text{DoS可达性判断}
+\rightarrow
+\text{FDI可信度评估}
+\rightarrow
+\text{虚拟领弹/置零保底重构}
+\rightarrow
+\text{弹性协同制导律}.
+\]
+
+与单纯的断联置零策略相比，引入虚拟领弹可以在DoS期间维持协同制导项的连续性；
+与单纯的信任权重策略相比，虚拟领弹又可以在FDI被识别后提供一个安全替代参考，避免可疑数据继续污染协同误差。
+
+\section{系统与协同变量}
+
+设共有 $N$ 个飞行器协同拦截同一目标，通信拓扑记为
+\[
+\mathcal{G}(t)=\{\mathcal{V},\mathcal{E}(t),A(t)\},
+\]
+其中 $\mathcal{V}=\{1,2,\ldots,N\}$，$A(t)=[a_{ij}(t)]$ 为邻接矩阵。
+若第 $i$ 个飞行器可以接收第 $j$ 个飞行器的信息，则 $a_{ij}(t)>0$；否则 $a_{ij}(t)=0$。
+
+为了突出协同制导本质，本文以剩余飞行时间作为主要协同变量。记第 $i$ 个飞行器的剩余飞行时间为
+\[
+t_{go,i}(t)=t_{f,i}(t)-t,
+\]
+其中 $t_{f,i}$ 为第 $i$ 个飞行器的预测命中时间。
+若所有飞行器满足
+\[
+t_{go,1}(t)=t_{go,2}(t)=\cdots=t_{go,N}(t),
+\]
+则它们将在同一时刻命中目标，从而实现齐射打击。
+
+在无攻击情况下，第 $i$ 个飞行器的协同误差可定义为
+\begin{equation}
+e_i(t)=
+\sum_{j\in\mathcal{N}_i(t)}
+a_{ij}(t)\left[t_{go,i}(t)-t_{go,j}(t)\right],
+\label{eq:nominal_error}
+\end{equation}
+其中 $\mathcal{N}_i(t)$ 为第 $i$ 个飞行器的邻居集合。
+
+\section{DoS与FDI混合攻击模型}
+
+在混合攻击下，第 $i$ 个飞行器从邻居 $j$ 接收到的信息记为
+\begin{equation}
+y_{ij}(t)
+=
+\gamma_{ij}(t)
+\left[
+x_j(t)+f_{ij}(t)
+\right],
+\label{eq:hybrid_attack_model}
+\end{equation}
+其中 $x_j(t)$ 表示邻居 $j$ 的真实发送信息，$f_{ij}(t)$ 表示FDI攻击信号，
+$\gamma_{ij}(t)$ 表示DoS攻击开关：
+\begin{equation}
+\gamma_{ij}(t)=
+\begin{cases}
+1, & \text{链路 }(j,i)\text{ 可用},\\
+0, & \text{链路 }(j,i)\text{ 被DoS阻断}.
+\end{cases}
+\label{eq:dos_switch}
+\end{equation}
+
+若 $x_j(t)=t_{go,j}(t)$，则式 \eqref{eq:hybrid_attack_model} 可以写为
+\begin{equation}
+y_{ij}(t)=
+\gamma_{ij}(t)
+\left[
+t_{go,j}(t)+f_{ij}(t)
+\right].
+\label{eq:tgo_attack_model}
+\end{equation}
+
+该模型包含三种典型情形：
+\[
+\begin{array}{lll}
+\gamma_{ij}=1,\ f_{ij}=0, & \text{正常通信},\\
+\gamma_{ij}=1,\ f_{ij}\neq 0, & \text{FDI攻击},\\
+\gamma_{ij}=0, & \text{DoS攻击}.
+\end{array}
+\]
+
+\section{FDI攻击处理：残差检测与信任权重}
+
+FDI攻击的特征是链路仍然存在，但收到的信息可能被篡改。因此，可以为每条链路建立一个本地预测器。
+第 $i$ 个飞行器对邻居 $j$ 的剩余飞行时间预测值记为
+\[
+\hat t_{go,j}^{\,i}(t).
+\]
+当链路可用时，定义残差
+\begin{equation}
+r_{ij}(t)=
+y_{ij}(t)-\hat t_{go,j}^{\,i}(t).
+\label{eq:residual}
+\end{equation}
+若
+\begin{equation}
+|r_{ij}(t)|>\Delta_{ij}(t),
+\label{eq:fdi_detector}
+\end{equation}
+则认为链路 $(j,i)$ 上的信息存在FDI风险。阈值可以取为动态形式
+\begin{equation}
+\Delta_{ij}(t)
+=
+c_0+c_1|\hat t_{go,j}^{\,i}(t)|+c_2 e^{-\lambda_\Delta(t-t_0)},
+\label{eq:threshold}
+\end{equation}
+其中 $c_0,c_1,c_2,\lambda_\Delta>0$。
+
+为了避免误判导致通信图突然断裂，本文不建议直接丢弃可疑信息，而是为每条链路设计信任权重
+\[
+\rho_{ij}(t)\in[0,1].
+\]
+一种连续形式的信任更新律为
+\begin{equation}
+\dot\rho_{ij}
+=
+-a_\rho \chi_{ij}(t)\rho_{ij}
++b_\rho[1-\rho_{ij}],
+\quad
+a_\rho,b_\rho>0,
+\label{eq:trust_update}
+\end{equation}
+其中
+\begin{equation}
+\chi_{ij}(t)
+=
+\max\left\{0,\ |r_{ij}(t)|-\Delta_{ij}(t)\right\}.
+\label{eq:residual_excess}
+\end{equation}
+当残差超过阈值时，$\chi_{ij}>0$，信任权重下降；当残差恢复正常时，第二项使信任权重逐渐恢复。
+
+\begin{remark}
+DoS期间没有新数据，残差检测没有意义。因此在 $\gamma_{ij}=0$ 时不更新FDI残差，而是转入虚拟领弹或信息保持机制。
+\end{remark}
+
+\section{DoS攻击处理：虚拟领弹与保底置零}
+
+DoS攻击的特征是链路断开，飞行器无法获得邻居的实时信息。若直接令断联链路的协同项为零，系统通常可以保持稳定或能量不增，但协同作用会暂时消失，并可能造成控制输入跳变。
+为此，本文引入虚拟领弹变量 $t_{go,v,ij}$，作为DoS期间邻居 $j$ 对飞行器 $i$ 的替代参考。
+
+当链路 $(j,i)$ 在 $t=t_d$ 时刻发生DoS断联时，虚拟领弹初始化为最后一次可信接收值：
+\begin{equation}
+t_{go,v,ij}(t_d)=y_{ij}(t_d^-).
+\label{eq:virtual_initial}
+\end{equation}
+在DoS期间，虚拟领弹可采用如下两种更新方式。
+
+\subsection{保持型虚拟领弹}
+
+保持型虚拟领弹仅按照剩余时间的自然变化进行预测：
+\begin{equation}
+\dot t_{go,v,ij}(t)=-1.
+\label{eq:virtual_hold}
+\end{equation}
+这种方法简单、保守，适合短时DoS情形。
+
+\subsection{目标型虚拟领弹}
+
+若存在期望协同命中时间 $T_d$，可令虚拟领弹朝该目标演化：
+\begin{equation}
+\dot t_{go,v,ij}(t)
+=
+-k_v\left[t_{go,v,ij}(t)-t_{go,d}(t)\right],
+\quad k_v>0,
+\label{eq:virtual_target}
+\end{equation}
+其中
+\[
+t_{go,d}(t)=T_d-t.
+\]
+该设计更积极，可以使断联飞行器在DoS期间仍朝全局协同目标演化。
+
+\subsection{安全开关}
+
+虚拟领弹不应向协同误差系统注入正能量。因此，本文引入符号一致性条件：
+\begin{equation}
+e_i(t)
+\left[
+t_{go,i}(t)-t_{go,v,ij}(t)
+\right]
+\ge 0.
+\label{eq:sign_consistency}
+\end{equation}
+若式 \eqref{eq:sign_consistency} 成立，则说明虚拟领弹项与误差下降方向一致，可以使用虚拟领弹；
+若不成立，则令该断联链路的协同权重置零，即退化为保底置零策略。
+
+\section{统一可信信息重构}
+
+综合DoS可达性判断、FDI信任权重和虚拟领弹机制，定义有效邻居信息为
+\begin{equation}
+t_{go,ij}^{\mathrm{eff}}(t)
+=
+\gamma_{ij}(t)\rho_{ij}(t)y_{ij}(t)
++
+\left[
+1-\gamma_{ij}(t)\rho_{ij}(t)
+\right]
+t_{go,v,ij}(t).
+\label{eq:effective_info}
+\end{equation}
+该式给出了DoS和FDI混合攻击下的统一处理方式：
+\[
+\begin{array}{lll}
+\gamma_{ij}=1,\ \rho_{ij}\approx 1,
+& t_{go,ij}^{\mathrm{eff}}\approx y_{ij},
+& \text{使用可信邻居信息},\\
+\gamma_{ij}=1,\ \rho_{ij}\approx 0,
+& t_{go,ij}^{\mathrm{eff}}\approx t_{go,v,ij},
+& \text{FDI可疑时转向虚拟领弹},\\
+\gamma_{ij}=0,
+& t_{go,ij}^{\mathrm{eff}}=t_{go,v,ij},
+& \text{DoS断联时使用虚拟领弹}.
+\end{array}
+\]
+
+进一步地，考虑安全开关后，可定义
+\begin{equation}
+\eta_{ij}(t)=
+\begin{cases}
+1, &
+\gamma_{ij}(t)\rho_{ij}(t)>0
+\text{ 或式 }\eqref{eq:sign_consistency}\text{ 成立},\\
+0, & \text{否则},
+\end{cases}
+\label{eq:safety_switch}
+\end{equation}
+并将协同误差写为
+\begin{equation}
+e_i^{\mathrm{r}}(t)
+=
+\sum_{j\in\mathcal{N}_i}
+a_{ij}(t)\eta_{ij}(t)
+\left[
+t_{go,i}(t)-t_{go,ij}^{\mathrm{eff}}(t)
+\right].
+\label{eq:resilient_error}
+\end{equation}
+其中上标 $\mathrm{r}$ 表示 resilient。
+
+\section{弹性协同制导律}
+
+在Dong等提出的三维非奇异协同制导律思想中，协同项可以通过剩余飞行时间误差驱动命中时间一致。
+在本文的混合攻击场景下，只需将原始协同误差替换为重构后的弹性协同误差 $e_i^{\mathrm{r}}$。
+一个典型的弹性协同制导项可设计为
+\begin{equation}
+u_i^{\mathrm{coop}}
+=
+-\frac{k_i(t)}{t_{go,i}}
+\left(
+\alpha |e_i^{\mathrm{r}}|^p\sgn(e_i^{\mathrm{r}})
++
+\beta |e_i^{\mathrm{r}}|^q\sgn(e_i^{\mathrm{r}})
+\right),
+\label{eq:coop_law}
+\end{equation}
+其中 $\alpha,\beta>0$，$0<p<1$，$q>1$。
+$k_i(t)>0$ 表示由制导几何、FOV辅助函数和速度等因素共同决定的有效增益。
+
+最终制导指令可写为
+\begin{equation}
+\bm a_i
+=
+\bm a_i^{\mathrm{PNG}}
++
+\bm a_i^{\mathrm{coop}},
+\label{eq:total_guidance}
+\end{equation}
+其中 $\bm a_i^{\mathrm{PNG}}$ 为基础比例导引项，$\bm a_i^{\mathrm{coop}}$ 为由式 \eqref{eq:coop_law} 诱导的协同修正项。
+
+\section{有限时间收敛分析}
+
+为了证明混合攻击下的有限时间收敛，需要区分两个阶段：可信连通阶段和不可信/断联阶段。
+在可信连通阶段，由可信链路构成的有效图保持连通，协同误差严格下降；
+在不可信或断联阶段，虚拟领弹和置零保底机制保证误差能量不增长。
+
+\begin{assumption}[DoS与FDI后的可信连通性]
+定义可信有效图 $\mathcal{G}_r(t)$，其边集由满足 $\eta_{ij}(t)=1$ 且信息未被判定为危险的链路组成。
+若 $\lambda_2(\mathcal{L}_r(t))>0$，则称系统处于可信连通阶段。
+定义
+\begin{equation}
+\delta_r(t)=
+\begin{cases}
+1, & \lambda_2(\mathcal{L}_r(t))>0,\\
+0, & \lambda_2(\mathcal{L}_r(t))=0.
+\end{cases}
+\label{eq:trusted_delta}
+\end{equation}
+\end{assumption}
+
+\begin{assumption}[有效收敛增益下界]
+存在正常数 $c_\sigma>0$，使得在考虑FOV辅助函数、非奇异修正项和虚拟领弹安全开关后，可信连通阶段的有效协同增益满足
+\begin{equation}
+k_i(t)\ge c_\sigma,\quad \forall i.
+\label{eq:gain_lower_bound}
+\end{equation}
+\end{assumption}
+
+\begin{assumption}[DoS/FDI不可信阶段能量不增]
+当 $\delta_r(t)=0$ 时，虚拟领弹和保底置零策略保证协同误差能量不增长，即
+\begin{equation}
+\dot V(t)\le 0.
+\label{eq:nonincrease}
+\end{equation}
+\end{assumption}
+
+定义整体协同误差能量
+\begin{equation}
+V(t)=\frac{1}{2}\sum_{i=1}^N \left(e_i^{\mathrm{r}}(t)\right)^2.
+\label{eq:lyapunov}
+\end{equation}
+在可信连通阶段，若有效图连通，则可以得到类似Dong等固定时间证明的估计：
+\begin{equation}
+\dot V(t)
+\le
+-\frac{\delta_r(t)}{\bar t_{go}(t)}
+\left[
+c_1 V^{\frac{1+p}{2}}(t)
++
+c_2 V^{\frac{1+q}{2}}(t)
+\right],
+\label{eq:Vdot_main}
+\end{equation}
+其中
+\[
+\bar t_{go}(t)=\max_{i\in\mathcal{V}} t_{go,i}(t),
+\]
+$c_1,c_2>0$ 与 $\alpha,\beta,c_\sigma$ 以及 $\lambda_2(\mathcal{L}_r)$ 的下界有关。
+
+进一步定义加权可信有效通信时间
+\begin{equation}
+S_r(t)
+=
+\int_{t_0}^{t}
+\frac{\delta_r(\tau)}{\bar t_{go}(\tau)}
+\,d\tau.
+\label{eq:weighted_safe_time}
+\end{equation}
+
+\begin{theorem}[混合攻击下的有限时间协同收敛]
+若假设1--3成立，且存在 $T_c<t_f$ 使得
+\begin{equation}
+S_r(T_c)
+\ge
+\frac{2}{c_1(1-p)}
++
+\frac{2}{c_2(q-1)},
+\label{eq:finite_time_condition}
+\end{equation}
+则协同误差能量在 $T_c$ 前收敛到零，即
+\[
+V(T_c)=0.
+\]
+因此，多飞行器的剩余飞行时间在命中目标前实现一致。
+\end{theorem}
+
+\begin{proof}
+由式 \eqref{eq:Vdot_main} 可知，在 $\delta_r(t)=1$ 的可信连通阶段，$V$ 满足双幂次有限时间收敛不等式。
+在 $\delta_r(t)=0$ 的DoS断联或FDI不可信阶段，由假设3可知 $\dot V\le 0$，因此这些阶段不会增加误差能量。
+
+令
+\[
+z(t)=\sqrt{V(t)}.
+\]
+当 $V>0$ 时，由式 \eqref{eq:Vdot_main} 可得
+\[
+\dot z(t)
+\le
+-\frac{\delta_r(t)}{2\bar t_{go}(t)}
+\left[
+c_1 z^p(t)+c_2 z^q(t)
+\right].
+\]
+将时间变量由 $t$ 换为加权可信有效通信时间 $S_r$，得到
+\[
+\frac{dz}{dS_r}
+\le
+-\frac{1}{2}
+\left[
+c_1 z^p+c_2 z^q
+\right].
+\]
+对该不等式积分可知，$z$ 收敛到零所需的加权可信有效通信时间不超过
+\[
+\frac{2}{c_1(1-p)}
++
+\frac{2}{c_2(q-1)}.
+\]
+因此，若式 \eqref{eq:finite_time_condition} 成立，则 $z(T_c)=0$，从而 $V(T_c)=0$。
+\end{proof}
+
+\begin{remark}
+若只使用普通累计有效通信时间
+\[
+s_r(t)=\int_{t_0}^{t}\delta_r(\tau)d\tau,
+\]
+则通常只能得到保守充分条件。因为Dong等的固定时间证明依赖 $1/t_{go}$ 型增益，真正决定收敛的不是普通连通时长，而是
+\[
+\int \delta_r(t)/\bar t_{go}(t)\,dt.
+\]
+若存在 $\bar t_{go}(t)\le \bar T_{go}$，则
+\[
+S_r(t)\ge \frac{s_r(t)}{\bar T_{go}},
+\]
+从而可用
+\[
+s_r(T_c)
+\ge
+\bar T_{go}
+\left[
+\frac{2}{c_1(1-p)}
++
+\frac{2}{c_2(q-1)}
+\right]
+\]
+作为更保守但更易验证的充分条件。
+\end{remark}
+
+\section{与概率安全通信时间的结合}
+
+若DoS攻击具有随机性，可引入期望安全通信时间
+\begin{equation}
+T_s
+=
+T\sum_{k=0}^{\mathcal{E}}
+F(k)(1-\rho_c)^k\rho_c^{\mathcal{E}-k},
+\label{eq:prob_safe_time}
+\end{equation}
+其中 $\mathcal{E}$ 为通信图边数，$F(k)$ 表示保留 $k$ 条边时能够形成连通子图的数量，$\rho_c$ 表示边失效概率。
+这里建议使用 $\rho_c$ 表示通信失效概率，而不要使用 $p$，因为 $p$ 已用于有限时间指数。
+
+式 \eqref{eq:prob_safe_time} 更适合给出概率意义下的收敛结论：
+\[
+\mathbb{P}
+\left\{
+S_r(t_f)
+\ge
+\frac{2}{c_1(1-p)}
++
+\frac{2}{c_2(q-1)}
+\right\}
+\]
+越大，命中前完成协同收敛的概率越高。
+若希望得到确定性结论，应将 $T_s$ 作为安全通信时间的确定性下界，而不是仅作为期望值。
+
+\section{仿真实验设计}
+
+为了验证该方法，建议设置如下仿真组。
+
+\begin{enumerate}
+\item \textbf{无攻击场景：}
+验证在理想通信下，弹性协同制导律可退化为普通协同制导律，并实现剩余飞行时间一致。
+
+\item \textbf{仅DoS攻击场景：}
+设置部分链路在若干时间区间内断联，比较断联置零、保持型虚拟领弹和目标型虚拟领弹三种策略。
+
+\item \textbf{仅FDI攻击场景：}
+对部分链路注入偏置、正弦或状态相关虚假数据，验证残差检测和信任权重是否能降低污染信息对协同误差的影响。
+
+\item \textbf{DoS+FDI混合攻击场景：}
+设置一部分链路先发生DoS，恢复后遭受FDI；另一部分链路保持通信但被注入虚假数据。验证统一信息重构机制的有效性。
+
+\item \textbf{有效通信时间边界测试：}
+改变DoS占空比和FDI强度，测试式 \eqref{eq:finite_time_condition} 附近的收敛边界。
+
+\item \textbf{消融实验：}
+分别去除信任权重、虚拟领弹、安全开关和保底置零策略，观察控制输入跳变、收敛时间和终端协同误差的变化。
+\end{enumerate}
+
+建议评价指标包括：
+\[
+\text{miss distance},\quad
+|t_{f,i}-t_{f,j}|,\quad
+V(t),\quad
+\rho_{ij}(t),\quad
+S_r(t),\quad
+\|\bm a_i(t)\|.
+\]
+
+\section{可写成论文贡献的表述}
+
+该思路可凝练为以下三点贡献：
+\begin{enumerate}
+\item 建立DoS与FDI混合攻击下的多飞行器协同制导通信模型，统一刻画链路中断和虚假数据污染对剩余飞行时间一致性的影响。
+\item 提出基于残差检测、信任权重、虚拟领弹和安全开关的可信邻居信息重构机制，使DoS断联和FDI污染均可转化为有效邻居信息退化问题。
+\item 在累计加权可信有效通信时间满足下界条件时，证明多飞行器协同误差可在命中目标前有限时间收敛到零，并通过混合攻击仿真验证该机制的弹性。
+\end{enumerate}
+
+\section{需要进一步确认的技术边界}
+
+该框架仍有三个需要在正式论文中进一步细化的地方：
+\begin{enumerate}
+\item 残差阈值 $\Delta_{ij}(t)$ 需要结合传感器噪声、目标机动和预测器误差上界设计，否则可能出现误判。
+\item 虚拟领弹 $t_{go,v,ij}$ 的更新律需要与具体制导模型匹配。若目标机动较强，保持型虚拟领弹可能产生较大预测误差。
+\item 若FOV辅助函数可能趋近于零，则有效增益下界 \eqref{eq:gain_lower_bound} 不成立，此时只能证明渐近收敛或小邻域收敛。若要严格证明有限时间收敛，需要保证辅助函数有正下界，或在定理中显式排除增益退化区间。
+\end{enumerate}
+
+\end{document}

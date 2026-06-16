@@ -1,0 +1,564 @@
+\documentclass[lettersize,journal]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{algorithmic}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{balance}
+
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+
+\newcommand{\sgn}{\operatorname{sgn}}
+\newcommand{\sat}{\operatorname{sat}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\R}{\mathbb{R}}
+
+\begin{document}
+
+\title{Resilient Cooperative Guidance Under Hybrid DoS and False-Data Injection Attacks}
+
+\author{Author~Name
+\thanks{This manuscript draft records a possible research idea for resilient cooperative guidance under hybrid cyber attacks.}}
+
+\markboth{Draft Manuscript,~June~2026}%
+{Resilient Cooperative Guidance Under Hybrid DoS and False-Data Injection Attacks}
+
+\maketitle
+
+\begin{abstract}
+This draft presents a unified treatment for denial-of-service (DoS) and false-data injection (FDI) attacks in networked cooperative guidance of multiple flight vehicles. DoS attacks remove communication links and make neighbor information unavailable, whereas FDI attacks keep the communication channel active but corrupt the transmitted guidance variables. To handle the two attack modes within a single framework, a trusted-neighbor information reconstruction mechanism is proposed. The mechanism first detects link availability, then evaluates data credibility through a multi-evidence trust mechanism that combines physical feasibility, group-consistency clustering, and windowed distribution divergence, and finally reconstructs the effective neighbor information by switching among the received data, a virtual-leader reference, and a conservative zero-bias fallback. Based on the reconstructed information, a resilient cooperative guidance error is defined for time-to-go synchronization. A finite-time convergence condition is further formulated in terms of the weighted trusted effective communication time. The result clarifies that convergence before interception can be guaranteed only when the accumulated trusted connectivity before impact is sufficiently large and the effective guidance gain does not degenerate.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Cooperative guidance, denial-of-service attack, false-data injection attack, resilient control, virtual leader, finite-time convergence.
+\end{IEEEkeywords}
+
+\section{Introduction}
+\IEEEPARstart{N}{etworked} cooperative guidance enables multiple flight vehicles to coordinate their impact times by exchanging local guidance variables, such as time-to-go estimates or impact-time errors. In an ideal communication environment, this problem can be converted into a consensus problem over a connected graph. However, the communication graph may be damaged by cyber attacks. In particular, DoS attacks interrupt communication links and make neighbor information unavailable, whereas FDI attacks inject corrupted data into still-active communication links. These two attack modes create different difficulties: DoS causes missing information, while FDI causes misleading information.
+
+A direct zero-bias strategy can be used during DoS intervals. Under such a strategy, the cooperative terms associated with disconnected links are removed, and the guidance law degenerates to a local or proportional-navigation-like behavior. This approach is conservative and useful for stability preservation, but it suspends part of the cooperation and may introduce discontinuities in the command. Conversely, a single-predictor residual detector may attenuate simple FDI signals but can be unreliable in cooperative guidance because target maneuvers, modeling errors, field-of-view constraints, and intermittent DoS intervals can all enlarge the prediction residual.
+
+This draft therefore proposes a unified trusted-information reconstruction framework. The central idea is to process the received neighbor information before it enters the cooperative guidance law. DoS is handled through link-availability indicators and virtual-leader substitution; FDI is handled through multi-evidence trust evaluation; and a sign-consistency safety switch is introduced to prevent the virtual-leader term from injecting positive energy into the cooperative error dynamics.
+
+The one-sentence argument of this draft is as follows: in cooperative guidance under hybrid DoS and FDI attacks, the impact-time synchronization error can be driven to zero before interception by reconstructing trusted effective neighbor information and by requiring a sufficient amount of weighted trusted communication time before impact.
+
+\section{Cooperative Guidance Variable}
+
+Consider $N$ flight vehicles intercepting a common target. The communication topology is described by
+\begin{equation}
+    \mathcal{G}(t)=\{\mathcal{V},\mathcal{E}(t),A(t)\},
+\end{equation}
+where $\mathcal{V}=\{1,2,\ldots,N\}$ is the vehicle set, $\mathcal{E}(t)$ is the communication edge set, and $A(t)=[a_{ij}(t)]$ is the adjacency matrix. If vehicle $i$ can receive information from vehicle $j$, then $a_{ij}(t)>0$; otherwise $a_{ij}(t)=0$.
+
+The main cooperative variable is selected as the time-to-go estimate. Let
+\begin{equation}
+    t_{go,i}(t)=t_{f,i}(t)-t
+\end{equation}
+denote the remaining flight time of vehicle $i$, where $t_{f,i}$ is its predicted impact time. Simultaneous interception requires
+\begin{equation}
+    t_{go,1}(t)=t_{go,2}(t)=\cdots=t_{go,N}(t).
+\end{equation}
+Without attacks, the local cooperative error can be defined as
+\begin{equation}
+    e_i(t)=
+    \sum_{j\in\mathcal{N}_i(t)}
+    a_{ij}(t)\left[t_{go,i}(t)-t_{go,j}(t)\right],
+    \label{eq:nominal_error}
+\end{equation}
+where $\mathcal{N}_i(t)$ is the neighbor set of vehicle $i$.
+
+\section{Hybrid DoS and FDI Attack Model}
+
+Let $y_{ij}(t)$ denote the information received by vehicle $i$ from vehicle $j$. Under hybrid DoS and FDI attacks, the received signal is modeled as
+\begin{equation}
+    y_{ij}(t)
+    =
+    \gamma_{ij}(t)\left[x_j(t)+f_{ij}(t)\right],
+    \label{eq:hybrid_model}
+\end{equation}
+where $x_j(t)$ is the true transmitted information of vehicle $j$, $f_{ij}(t)$ is the FDI signal injected into link $(j,i)$, and $\gamma_{ij}(t)$ is the DoS switching signal:
+\begin{equation}
+    \gamma_{ij}(t)=
+    \begin{cases}
+        1, & \text{link }(j,i)\text{ is available},\\
+        0, & \text{link }(j,i)\text{ is blocked by DoS}.
+    \end{cases}
+    \label{eq:dos_switch}
+\end{equation}
+For time-to-go coordination, \eqref{eq:hybrid_model} becomes
+\begin{equation}
+    y_{ij}(t)
+    =
+    \gamma_{ij}(t)
+    \left[t_{go,j}(t)+f_{ij}(t)\right].
+    \label{eq:tgo_attack}
+\end{equation}
+
+This model covers three cases. If $\gamma_{ij}=1$ and $f_{ij}=0$, the link is normal. If $\gamma_{ij}=1$ and $f_{ij}\ne0$, the link is active but corrupted by FDI. If $\gamma_{ij}=0$, the link is unavailable due to DoS.
+
+\section{FDI Treatment: Multi-Evidence Trust Evaluation}
+
+FDI attacks should not be handled as missing data because the corrupted signal is still received. A direct approach is to compare the received information with a local prediction. Let $\hat t_{go,j}^{\,i}(t)$ denote the prediction of vehicle $j$'s time-to-go maintained by vehicle $i$. The residual is
+\begin{equation}
+    r_{ij}(t)=y_{ij}(t)-\hat t_{go,j}^{\,i}(t).
+    \label{eq:residual}
+\end{equation}
+However, a detector based only on $r_{ij}(t)$ is fragile in cooperative guidance. Target maneuvers, modeling errors, field-of-view constraints, previous DoS intervals, and inaccurate time-to-go approximation can all enlarge the residual even when no attack exists. Conversely, an intelligent attacker may inject data that remain close to the predictor and therefore bypass a single residual threshold. For this reason, the residual is treated only as one weak evidence source, and the credibility of each link is evaluated by a multi-evidence trust mechanism.
+
+The proposed FDI treatment answers three questions for each received neighbor datum:
+\begin{itemize}
+    \item Is the datum physically feasible under the engagement and guidance constraints?
+    \item Is the datum consistent with the information reported by other neighbors?
+    \item Does the recent residual distribution deviate from the nominal residual distribution?
+\end{itemize}
+The three answers are converted into continuous trust scores and fused into the final link trust weight $\rho_{ij}(t)\in[0,1]$.
+
+\subsection{Physical Feasibility Evidence}
+
+The first evidence source uses guidance-domain constraints instead of a precise predictor. Based on the last trusted state of vehicle $j$, the maximum speed or acceleration, the admissible field-of-view region, and the remaining range, vehicle $i$ constructs a feasible interval for the neighbor's time-to-go:
+\begin{equation}
+    t_{go,j}(t)
+    \in
+    \left[
+    \underline t_{go,j}^{\,i}(t),
+    \overline t_{go,j}^{\,i}(t)
+    \right].
+    \label{eq:physical_interval}
+\end{equation}
+If the received value lies outside this interval, it violates basic engagement feasibility and is strongly suspicious. The physical trust score can be defined as
+\begin{equation}
+    \rho_{ij}^{\mathrm{phy}}(t)=
+    \begin{cases}
+        1, &
+        y_{ij}(t)\in
+        \left[
+        \underline t_{go,j}^{\,i}(t),
+        \overline t_{go,j}^{\,i}(t)
+        \right],\\
+        \epsilon_{\rho}, & \text{otherwise},
+    \end{cases}
+    \label{eq:physical_trust}
+\end{equation}
+where $0<\epsilon_{\rho}\ll1$ avoids an unnecessarily hard rejection. This layer is robust to moderate prediction errors because it only checks whether the received datum is physically possible.
+
+\subsection{Group-Consistency or GMM Evidence}
+
+The second evidence source uses the redundancy of the multi-vehicle system. Under normal cooperation, the information reported by neighboring vehicles should be mutually consistent. Define a feature vector
+\begin{equation}
+    \bm{\xi}_j(t)
+    =
+    \begin{bmatrix}
+    t_{go,j}(t) &
+    \dot t_{go,j}(t) &
+    q_j(t) &
+    \dot q_j(t)
+    \end{bmatrix}^{T},
+    \label{eq:feature_vector}
+\end{equation}
+where $q_j$ and $\dot q_j$ denote line-of-sight-related variables. The neighbor feature set observed by vehicle $i$ is
+\begin{equation}
+    \mathcal{X}_i(t)=
+    \left\{
+    \bm{\xi}_{\ell}(t):\ell\in\mathcal{N}_i(t)
+    \right\}.
+    \label{eq:gmm_dataset}
+\end{equation}
+A Gaussian mixture model can cluster $\mathcal{X}_i(t)$ into a normal component and a suspicious component. The corresponding trust score is the belief that vehicle $j$ belongs to the normal component:
+\begin{equation}
+    \rho_{ij}^{\mathrm{gmm}}(t)
+    =
+    \Pr\left(
+    \bm{\xi}_j(t)\in\mathcal{C}_{\mathrm{normal}}
+    \mid
+    \mathcal{X}_i(t)
+    \right).
+    \label{eq:gmm_trust}
+\end{equation}
+This idea follows the logic of clustering-based secure state estimation: rather than assuming a known attack form, the detector lets the data separate normal and abnormal information.
+
+If a full GMM is too costly or the number of neighbors is small, a median-consistency score can be used instead:
+\begin{equation}
+    d_{ij}^{\mathrm{med}}(t)
+    =
+    \left|
+    y_{ij}(t)
+    -
+    \operatorname{median}_{\ell\in\mathcal{N}_i(t)}
+    y_{i\ell}(t)
+    \right|,
+    \label{eq:median_distance}
+\end{equation}
+\begin{equation}
+    \rho_{ij}^{\mathrm{grp}}(t)
+    =
+    \exp\left[-\kappa_g d_{ij}^{\mathrm{med}}(t)\right],
+    \quad \kappa_g>0.
+    \label{eq:group_trust}
+\end{equation}
+The larger the deviation from the group-consistent value is, the lower the trust becomes.
+
+\subsection{Windowed Distribution Evidence}
+
+The third evidence source evaluates the recent statistical behavior of the residual. This is important because FDI attacks may be slow, intermittent, or small enough to avoid a single-time threshold. Define a residual window
+\begin{equation}
+    \mathcal{R}_{ij}^{L}(t)
+    =
+    \left\{
+    r_{ij}(t-L+1),\ldots,r_{ij}(t)
+    \right\},
+    \label{eq:residual_window}
+\end{equation}
+where $L$ is the window length. Let $\mathcal{P}_{ij}^{L}(t)$ be the empirical distribution of this window and let $\mathcal{P}_{ij}^{0}$ be the nominal residual distribution obtained from attack-free data or from a recently trusted window. A Kullback--Leibler divergence score is
+\begin{equation}
+    D_{ij}^{\mathrm{KL}}(t)
+    =
+    D_{\mathrm{KL}}
+    \left(
+    \mathcal{P}_{ij}^{L}(t)
+    \|
+    \mathcal{P}_{ij}^{0}
+    \right).
+    \label{eq:kld_score}
+\end{equation}
+The distribution-based trust score is then
+\begin{equation}
+    \rho_{ij}^{\mathrm{kl}}(t)
+    =
+    \exp\left[-\kappa_{kl}D_{ij}^{\mathrm{KL}}(t)\right],
+    \quad \kappa_{kl}>0.
+    \label{eq:kld_trust}
+\end{equation}
+A short window reacts quickly but may create more false alarms, whereas a long window is smoother but slower. Thus, $L$ should be selected according to the expected attack duration and guidance update rate.
+
+\subsection{Trust Fusion and Smoothing}
+
+The final raw trust score is obtained by fusing the three evidence channels:
+\begin{equation}
+    \bar{\rho}_{ij}(t)
+    =
+    \sat_{[0,1]}
+    \left(
+    \rho_{ij}^{\mathrm{phy}}(t)
+    \rho_{ij}^{\mathrm{gmm}}(t)
+    \rho_{ij}^{\mathrm{kl}}(t)
+    \right).
+    \label{eq:fused_trust}
+\end{equation}
+If the median-consistency score is used instead of GMM, $\rho_{ij}^{\mathrm{gmm}}$ in \eqref{eq:fused_trust} is replaced by $\rho_{ij}^{\mathrm{grp}}$.
+
+To avoid abrupt command changes caused by sudden trust switching, the implemented trust weight is filtered as
+\begin{equation}
+    \dot{\rho}_{ij}(t)
+    =
+    -a_{\rho}
+    \left[
+    \rho_{ij}(t)-\bar{\rho}_{ij}(t)
+    \right],
+    \quad a_{\rho}>0.
+    \label{eq:trust_filter}
+\end{equation}
+The resulting $\rho_{ij}(t)$ is a continuous credibility weight. A value close to one means that the received information is physically feasible, group-consistent, and distributionally normal. A value close to zero means that the link is likely corrupted by FDI and should be replaced by the virtual-leader information in the reconstruction layer.
+
+\begin{remark}
+During a DoS interval, no new neighbor data are available. Therefore, FDI evidence is frozen or propagated from the last trusted value, and the link is handled by virtual-leader substitution. This separation avoids confusing missing data with corrupted data.
+\end{remark}
+
+\section{DoS Treatment: Virtual Leader and Zero-Bias Fallback}
+
+DoS attacks make neighbor information unavailable. If the cooperative term of every disconnected link is directly set to zero, the error energy can be prevented from increasing, but cooperation is partially suspended. To reduce this conservatism, a virtual-leader variable $t_{go,v,ij}(t)$ is introduced as the substitute reference for the unavailable neighbor $j$ as seen by vehicle $i$.
+
+When link $(j,i)$ becomes unavailable at $t=t_d$, the virtual leader is initialized by the last trusted value:
+\begin{equation}
+    t_{go,v,ij}(t_d)=y_{ij}(t_d^-).
+    \label{eq:virtual_init}
+\end{equation}
+For short DoS intervals, a conservative holding-type virtual leader can be used:
+\begin{equation}
+    \dot t_{go,v,ij}(t)=-1.
+    \label{eq:virtual_hold}
+\end{equation}
+If a desired impact time $T_d$ is available, a target-oriented virtual leader can be designed as
+\begin{equation}
+    \dot t_{go,v,ij}(t)
+    =
+    -k_v\left[t_{go,v,ij}(t)-t_{go,d}(t)\right],
+    \quad
+    t_{go,d}(t)=T_d-t,
+    \label{eq:virtual_target}
+\end{equation}
+where $k_v>0$.
+
+The virtual leader should be used only when it helps reduce the cooperative error. A sign-consistency safety switch is therefore introduced:
+\begin{equation}
+    e_i(t)\left[t_{go,i}(t)-t_{go,v,ij}(t)\right]\ge 0.
+    \label{eq:sign_condition}
+\end{equation}
+If \eqref{eq:sign_condition} holds, the virtual-leader compensation is regarded as safe. Otherwise, the corresponding disconnected cooperative term is set to zero. This fallback recovers the conservative zero-bias strategy.
+
+\section{Trusted Neighbor Information Reconstruction}
+
+The effective neighbor information is reconstructed as
+\begin{equation}
+    t_{go,ij}^{\mathrm{eff}}(t)
+    =
+    \gamma_{ij}(t)\rho_{ij}(t)y_{ij}(t)
+    +
+    \left[1-\gamma_{ij}(t)\rho_{ij}(t)\right]
+    t_{go,v,ij}(t).
+    \label{eq:effective_info}
+\end{equation}
+Equation \eqref{eq:effective_info} unifies the treatment of normal communication, FDI, and DoS:
+\begin{itemize}
+    \item if $\gamma_{ij}=1$ and $\rho_{ij}\approx 1$, then $t_{go,ij}^{\mathrm{eff}}\approx y_{ij}$;
+    \item if $\gamma_{ij}=1$ and $\rho_{ij}\approx 0$, then the suspicious FDI-corrupted data are suppressed and $t_{go,ij}^{\mathrm{eff}}\approx t_{go,v,ij}$;
+    \item if $\gamma_{ij}=0$, then $t_{go,ij}^{\mathrm{eff}}=t_{go,v,ij}$.
+\end{itemize}
+
+To include the safety switch, define
+\begin{equation}
+    \eta_{ij}(t)=
+    \begin{cases}
+        1, & \gamma_{ij}(t)\rho_{ij}(t)>0
+        \text{ or \eqref{eq:sign_condition} holds},\\
+        0, & \text{otherwise}.
+    \end{cases}
+    \label{eq:safety_switch}
+\end{equation}
+The resilient cooperative error is then
+\begin{equation}
+    e_i^{r}(t)
+    =
+    \sum_{j\in\mathcal{N}_i}
+    a_{ij}(t)\eta_{ij}(t)
+    \left[t_{go,i}(t)-t_{go,ij}^{\mathrm{eff}}(t)\right].
+    \label{eq:resilient_error}
+\end{equation}
+
+\section{Resilient Cooperative Guidance Law}
+
+Following fixed-time time-to-go synchronization designs, the cooperative guidance term can be constructed by replacing the nominal error in \eqref{eq:nominal_error} with the resilient error in \eqref{eq:resilient_error}. A representative cooperative term is
+\begin{equation}
+    u_i^{\mathrm{coop}}
+    =
+    -\frac{k_i(t)}{t_{go,i}(t)}
+    \left(
+    \alpha |e_i^{r}|^{p}\sgn(e_i^{r})
+    +
+    \beta |e_i^{r}|^{q}\sgn(e_i^{r})
+    \right),
+    \label{eq:coop_law}
+\end{equation}
+where $\alpha,\beta>0$, $0<p<1$, $q>1$, and $k_i(t)>0$ denotes the effective geometric guidance gain. The total guidance command can be expressed as
+\begin{equation}
+    \bm a_i
+    =
+    \bm a_i^{\mathrm{PNG}}
+    +
+    \bm a_i^{\mathrm{coop}},
+    \label{eq:guidance_command}
+\end{equation}
+where $\bm a_i^{\mathrm{PNG}}$ is the baseline proportional navigation term and $\bm a_i^{\mathrm{coop}}$ is induced by \eqref{eq:coop_law}.
+
+\section{Finite-Time Convergence Under Hybrid Attacks}
+
+The convergence analysis separates the time axis into trusted-connected intervals and unsafe or disconnected intervals. During trusted-connected intervals, the effective graph is connected and the cooperative error decreases. During unsafe or disconnected intervals, the virtual-leader and zero-bias fallback mechanisms guarantee nonincrease of the error energy.
+
+\begin{assumption}[Trusted effective connectivity]
+Let $\mathcal{G}_r(t)$ denote the trusted effective graph induced by links that pass the trust and safety conditions. Define
+\begin{equation}
+    \delta_r(t)=
+    \begin{cases}
+        1, & \lambda_2(\mathcal{L}_r(t))>0,\\
+        0, & \lambda_2(\mathcal{L}_r(t))=0,
+    \end{cases}
+    \label{eq:trusted_delta}
+\end{equation}
+where $\mathcal{L}_r(t)$ is the Laplacian matrix of $\mathcal{G}_r(t)$.
+\end{assumption}
+
+\begin{assumption}[Nondegenerate effective gain]
+There exists a constant $c_{\sigma}>0$ such that
+\begin{equation}
+    k_i(t)\ge c_{\sigma},\quad i=1,\ldots,N.
+    \label{eq:gain_lower_bound}
+\end{equation}
+This condition excludes the case where field-of-view auxiliary functions or singularity-avoidance functions make the cooperative gain vanish.
+\end{assumption}
+
+\begin{assumption}[Nonincrease during unsafe intervals]
+When $\delta_r(t)=0$, the virtual-leader safety switch and zero-bias fallback guarantee
+\begin{equation}
+    \dot V(t)\le 0.
+    \label{eq:nonincrease}
+\end{equation}
+\end{assumption}
+
+Define the cooperative error energy as
+\begin{equation}
+    V(t)=\frac{1}{2}\sum_{i=1}^{N}\left(e_i^{r}(t)\right)^2.
+    \label{eq:lyapunov}
+\end{equation}
+Under the resilient guidance law, the following inequality is expected over the whole time axis:
+\begin{equation}
+    \dot V(t)
+    \le
+    -\frac{\delta_r(t)}{\bar t_{go}(t)}
+    \left[
+    c_1 V^{\frac{1+p}{2}}(t)
+    +
+    c_2 V^{\frac{1+q}{2}}(t)
+    \right],
+    \label{eq:vdot}
+\end{equation}
+where $c_1,c_2>0$ and
+\begin{equation}
+    \bar t_{go}(t)=\max_{i\in\mathcal{V}} t_{go,i}(t).
+\end{equation}
+
+Define the weighted trusted effective communication time as
+\begin{equation}
+    S_r(t)
+    =
+    \int_{t_0}^{t}
+    \frac{\delta_r(\tau)}{\bar t_{go}(\tau)}
+    d\tau .
+    \label{eq:weighted_time}
+\end{equation}
+
+\begin{theorem}[Finite-time convergence under hybrid attacks]
+Suppose Assumptions 1--3 hold. If there exists $T_c<t_f$ such that
+\begin{equation}
+    S_r(T_c)
+    \ge
+    \frac{2}{c_1(1-p)}
+    +
+    \frac{2}{c_2(q-1)},
+    \label{eq:ft_condition}
+\end{equation}
+then $V(T_c)=0$. Thus, the time-to-go synchronization error converges to zero before interception.
+\end{theorem}
+
+\begin{proof}
+When $V>0$, define $z=\sqrt{V}$. From \eqref{eq:vdot},
+\begin{equation}
+    \dot z(t)
+    \le
+    -\frac{\delta_r(t)}{2\bar t_{go}(t)}
+    \left[
+    c_1 z^p(t)+c_2 z^q(t)
+    \right].
+\end{equation}
+Using $S_r$ as the new time variable yields
+\begin{equation}
+    \frac{dz}{dS_r}
+    \le
+    -\frac{1}{2}
+    \left(c_1 z^p+c_2 z^q\right).
+\end{equation}
+The settling value of $S_r$ is upper bounded by
+\begin{equation}
+    \frac{2}{c_1(1-p)}+\frac{2}{c_2(q-1)}.
+\end{equation}
+Therefore, \eqref{eq:ft_condition} implies $z(T_c)=0$, and hence $V(T_c)=0$.
+\end{proof}
+
+\begin{remark}
+The ordinary accumulated communication time
+\begin{equation}
+    s_r(t)=\int_{t_0}^{t}\delta_r(\tau)d\tau
+\end{equation}
+is useful but insufficient for a tight proof because the fixed-time guidance structure depends on $1/t_{go}$. If $\bar t_{go}(t)\le \bar T_{go}$, then
+\begin{equation}
+    S_r(t)\ge \frac{s_r(t)}{\bar T_{go}},
+\end{equation}
+which gives the conservative sufficient condition
+\begin{equation}
+    s_r(T_c)
+    \ge
+    \bar T_{go}
+    \left[
+    \frac{2}{c_1(1-p)}
+    +
+    \frac{2}{c_2(q-1)}
+    \right].
+\end{equation}
+\end{remark}
+
+\section{Connection With Probabilistic Safe Communication Time}
+
+If the DoS process is random, the safe communication duration can be described probabilistically. For example,
+\begin{equation}
+    T_s
+    =
+    T\sum_{k=0}^{\mathcal{E}}
+    F(k)(1-\rho_c)^k\rho_c^{\mathcal{E}-k},
+    \label{eq:prob_safe_time}
+\end{equation}
+where $\mathcal{E}$ is the number of communication edges, $F(k)$ denotes the number of connected subgraphs obtained when exactly $k$ edges are preserved, and $\rho_c$ is the edge failure probability. The notation $\rho_c$ is used here to avoid conflict with the finite-time exponent $p$.
+
+Equation \eqref{eq:prob_safe_time} should be interpreted carefully. If $T_s$ is an expected value, it cannot by itself prove deterministic finite-time convergence. A deterministic theorem requires a lower bound on $S_r(t_f)$ or $s_r(t_f)$. In contrast, a probabilistic theorem can be stated in terms of
+\begin{equation}
+    \mathbb{P}\left\{
+    S_r(t_f)
+    \ge
+    \frac{2}{c_1(1-p)}
+    +
+    \frac{2}{c_2(q-1)}
+    \right\}.
+\end{equation}
+This probability quantifies the likelihood that the vehicles complete time-to-go synchronization before interception under random link failures.
+
+\section{Simulation Plan}
+
+The following cases can be used to verify the proposed framework.
+
+\subsection{No-Attack Baseline}
+The first case verifies that the proposed guidance law reduces to the nominal cooperative guidance law when $\gamma_{ij}=1$ and $f_{ij}=0$ for all links.
+
+\subsection{DoS-Only Case}
+Several communication links are blocked over prescribed time intervals. The zero-bias strategy, the holding-type virtual leader, and the target-oriented virtual leader should be compared.
+
+\subsection{FDI-Only Case}
+Bias, sinusoidal, state-dependent, and slow-drift FDI signals are injected into selected links. The physical trust $\rho_{ij}^{\mathrm{phy}}(t)$, the group-consistency or GMM trust $\rho_{ij}^{\mathrm{gmm}}(t)$, the distribution trust $\rho_{ij}^{\mathrm{kl}}(t)$, and the final fused trust $\rho_{ij}(t)$ should be plotted to show how corrupted information is attenuated. This case should also compare the proposed multi-evidence trust evaluator with a single residual detector.
+
+\subsection{Hybrid DoS and FDI Case}
+Some links are blocked by DoS, while other available links are corrupted by FDI. This case is the main scenario for validating the unified reconstruction law \eqref{eq:effective_info}.
+
+\subsection{Boundary Test on Effective Communication Time}
+The DoS duty cycle and FDI intensity are varied to test whether the convergence behavior changes consistently with the finite-time condition \eqref{eq:ft_condition}.
+
+\subsection{Ablation Study}
+The ablation study should remove one module at a time: physical feasibility, group-consistency/GMM trust, KLD window trust, virtual leader, safety switch, and zero-bias fallback. The expected metrics include miss distance, impact-time disagreement, $V(t)$, $S_r(t)$, trust-weight evolution, false alarm rate, missed detection rate, and command magnitude.
+
+\section{Possible Contributions}
+
+The method can be written as the following contributions:
+\begin{enumerate}
+    \item A hybrid DoS-FDI attack model is established for cooperative guidance, simultaneously describing missing neighbor information and corrupted neighbor information.
+    \item A multi-evidence FDI trust evaluation mechanism is proposed by combining physical feasibility, group-consistency clustering, and windowed distribution divergence, reducing the dependence on a single prediction residual.
+    \item A trusted-neighbor information reconstruction mechanism is proposed by combining the fused FDI trust, virtual-leader substitution, and a sign-consistency safety switch.
+    \item A finite-time convergence condition is derived in terms of weighted trusted effective communication time, clarifying when synchronization before interception can still be guaranteed under hybrid cyber attacks.
+\end{enumerate}
+
+\section{Technical Boundaries}
+
+Several limitations should be stated explicitly in the final manuscript. First, the physical feasibility interval in \eqref{eq:physical_interval} must be constructed from valid bounds on acceleration, target maneuver, and field-of-view constraints; otherwise the physical trust score may become overly conservative. Second, GMM-based trust requires enough neighbor redundancy to separate normal and suspicious clusters. If too many vehicles are attacked simultaneously, the clustering result may become unreliable. Third, KLD-based trust depends on the quality of the nominal residual distribution and the window length. A short window reacts quickly but may increase false alarms, whereas a long window is smoother but slower. Fourth, the virtual-leader dynamics should match the guidance model and the expected DoS duration. Finally, if field-of-view or nonsingularity auxiliary functions drive the effective gain to zero, finite-time convergence cannot be strictly guaranteed. In that case, the result should be weakened to asymptotic convergence, convergence to a small neighborhood, or finite-time convergence under an additional gain lower-bound condition.
+
+\section{Conclusion}
+
+This draft provides a complete framework for handling DoS and FDI attacks in cooperative guidance. The key is to avoid treating the two attacks as separate controller-design problems. Instead, the received neighbor information is processed by a trusted reconstruction layer before entering the guidance law. DoS is handled by virtual-leader substitution and zero-bias fallback, whereas FDI is handled by a multi-evidence trust evaluation mechanism that combines physical feasibility, group consistency, and windowed distribution divergence. Under sufficient weighted trusted effective communication time, the cooperative error can be shown to converge before interception.
+
+\balance
+\end{document}

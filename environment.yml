@@ -1,0 +1,15 @@
+name: resilent_contorl
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - ipykernel
+  - jupyterlab
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - sympy
+  - pip:
+      - control==0.10.2

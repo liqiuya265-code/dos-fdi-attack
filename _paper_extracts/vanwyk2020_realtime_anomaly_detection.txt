@@ -1,0 +1,873 @@
+1264                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+
+                 Real-Time Sensor Anomaly Detection and
+                   Identification in Automated Vehicles
+       Franco van Wyk, Member, IEEE, Yiyang Wang, Anahita Khojandi , Member, IEEE, and Neda Masoud
+
+    Abstract— Connected and automated vehicles (CAVs) are                           units (RSUs), and with personal mobile devices. This will
+expected to revolutionize the transportation industry, mainly                       allow them to continuously transmit and share information
+through allowing for a real-time and seamless exchange of infor-                    such as speed, position, acceleration, and braking, enabling
+mation between vehicles and roadside infrastructure. Although
+connectivity and automation are projected to bring about a vast                     CAVs to warn their surrounding vehicles of potentially unsafe
+number of benefits, they can give rise to new challenges in                         circumstances. These vehicle-to-vehicle (V2V) and vehicle-to-
+terms of safety, security, and privacy. To navigate roadways,                       infrastructure (V2I) communication technologies will provide
+CAVs need to heavily rely on their sensor readings and the                          unprecedented efficiency, safety, and mobility advancements.
+information received from other vehicles and roadside units.                        For instance, CAV technologies are expected to decrease
+Hence, anomalous sensor readings caused by either malicious
+cyber attacks or faulty vehicle sensors can result in disruptive                    fatal traffic accidents by as much as 80%, reducing their
+consequences and possibly lead to fatal crashes. As a result,                       corresponding $870 billion cost, while also improving traffic
+before the mass implementation of CAVs, it is important to                          flow, cutting into the approximate 7 billion hours American
+develop methodologies that can detect anomalies and identify                        motorists spend in traffic annually [4].
+their sources seamlessly and in real time. In this paper, we develop                   Although the ever-increasing use of CAV technologies in
+an anomaly detection approach through combining a deep
+learning method, namely convolutional neural network (CNN),                         vehicles are expected to have numerous advantages, the poten-
+with a well-established anomaly detection method, and Kalman                        tial drawbacks are not negligible. CAVs use a variety of
+filtering with a χ 2 -detector, to detect and identify anomalous                    sensors to build a virtual map of their surroundings in order
+behavior in CAVs. Our numerical experiments demonstrate that                        to drive in the correct lane within the speed limit, avoid
+the developed approach can detect anomalies and identify their                      collisions, and detect obstacles in their immediate physi-
+sources with high accuracy, sensitivity, and F1 score. In addition,
+this developed approach outperforms the anomaly detection and                       cal environment. Hence, anomalous sensor values caused by
+identification capabilities of both CNNs and Kalman filtering with                  either malicious cyber attacks or faulty vehicle sensors can
+a χ 2 -detector method alone. It is envisioned that this research                   result in disruptive consequences, and possibly lead to fatal
+will contribute to the development of safer and more resilient                      crashes. The increase in connectivity and automation has led
+CAV systems that implement a holistic view toward intelligent                       to the scrutiny of in-vehicle network architectures used by
+transportation system (ITS) concepts.
+                                                                                    automotive manufacturers and evaluation of vulnerabilities
+    Index Terms— Cyber-physical systems, fault diagnosis,
+intelligent vehicles, intrusion detection, vehicle safety.                          in their resiliency against such anomalous behavior [5]–[7].
+                                                                                    For instance, the dedicated short-range communication
+                             I. I NTRODUCTION                                       (DSRC) technology is currently used to facilitate commu-
+                                                                                    nication within connected networks. DSRC has a range of
+O      UR current transportation system is on the brink of
+       transforming into a highly connected, automated, and
+intelligent system as a result of the rapid emergence of
+                                                                                    approximately 300 meters, hence it can protect vehicles from
+                                                                                    long-range cyber attacks, e.g., a stationary attacker would only
+                                                                                    have a short time-window to attack moving vehicles when they
+connected and automated vehicles (CAVs) [1]. CAVs, with
+                                                                                    are in close proximity [8]. Although such a technology can
+various degrees of connectedness and automation, are expected
+                                                                                    prove useful, it is not comprehensive enough and leaves CAVs
+to play an integral role in the next phase of the transporta-
+                                                                                    vulnerable to non-stationary attackers, among others. Hence,
+tion revolution, leading to more accessible, more efficient,
+                                                                                    it is necessary to better understand CAVs’ vulnerabilities and
+safer, more environmentally friendly, and hence sustainable,
+                                                                                    develop holistic, real-time methodologies that can mitigate
+transportation options [2], [3]. CAVs use wireless technology
+                                                                                    them.
+to facilitate communication between vehicles, with roadside
+                                                                                       Various internal and external cyber attack surfaces exist
+  Manuscript received April 16, 2018; revised September 26, 2018 and                in CAV systems, i.e., the entry point of the attack, which
+January 28, 2019; accepted March 11, 2019. Date of publication April 9,             may enable hackers to access and compromise the safety and
+2019; date of current version February 28, 2020. The Associate Editor for           integrity of CAVs [6], [7], [9], [10], [16], [17]. Typical internal
+this paper was S.-H. Kong. (Corresponding author: Anahita Khojandi.)
+  F. van Wyk and A. Khojandi are with the Industrial and                            attack surfaces include in-vehicle devices, GPS system, on-
+Systems Engineering Department, The University of Tennessee,                        board diagnostics (OBD) system, vehicle sensors including
+Knoxville,      TN      37996     USA      (e-mail: fvanwyk@vols.utk.edu;           the controller area network (CAN) bus, and other sensors
+khojandi@utk.edu).
+  Y. Wang and N. Masoud are with the Civil and Environmental Engineering            required for CAV operation. For instance, [9] demonstrated
+Department, University of Michigan, Ann Arbor, MI 48109 USA (e-mail:                through an OBD port attack, it is possible to disable the
+yiyangw@umich.edu; nmasoud@umich.edu).                                              brakes, turn-off head-lights, and take over steering for cars
+  This article has supplementary downloadable material available at
+http://ieeexplore.ieee.org, provided by the author.                                 equipped with a low level of autonomy. Typical external attack
+  Digital Object Identifier 10.1109/TITS.2019.2906038                               surfaces include information from RSUs, machine vision, data
+                         1524-9050 © 2019 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+                                       See https://www.ieee.org/publications/rights/index.html for more information.
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+VAN WYK et al.: REAL-TIME SENSOR ANOMALY DETECTION AND IDENTIFICATION IN AUTOMATED VEHICLES                                                                   1265
+
+
+
+from other vehicles, security system breaches of the vehicle,                    normal data is being fused to increase the reliability of the
+and navigation interference [10], [15], [19]. For instance,                      fused data.
+[10] demonstrated how an attacker could gain access to the                           A large body of work exists that examines various methods
+visual recognition software used in autonomous vehicles and                      to detect anomalies, if they occur, and/or identify their source;
+manipulate it by creating a simple alteration to RSUs that                       however, only a limited number of these studies are focused
+would cause the car to misinterpret them, possibly putting                       on CAVs and ITS. Table VIII in the supplementary material
+vehicle occupants at risk. Similarly, several teams have hacked                  summarizes some of the important works related to anomaly
+traffic light controller systems, highway signs, and traffic                     detection and identification in CAVs. Several studies employ
+surveillance cameras [52]. For instance, in 2017, approxi-                       distance-related metrics such as the Mahalanobis distance,
+mately 70% of the storage devices that record data from                          affinity propagation clustering, and graph theory to detect in-
+Washington D.C. police surveillance cameras were infected                        vehicular network intrusions and faulty sensors [20], [21],
+with ransomware by hackers [53]. Injection of fake infor-                        [24], [25]. Also, Kalman filtering [14] has been used in numer-
+mation and map database poisoning is considered to be one                        ous applications for fault detection [29], [30]. In addition,
+of the most dangerous cyber attacks on CAVs [16]. Future                         some recent studies have employed deep learning techniques
+CAVs are expected to have even more attack surfaces                              such as convolutional neural network (CNN) [33], recurrent
+than what has currently been investigated. Possible rea-                         neural network (RNN) [48], and multilayer perceptron (MLP)
+sons for cyber attacks on CAVs include financial gain, col-                      models to detect anomalies in autonomous agriculture equip-
+lecting private information, and gaining priority access to                      ment vision and malicious CAN packets in modern vehicles
+infrastructure.                                                                  [26], [27]. Deep learning techniques can be implemented on
+   Not all anomalous sensor behavior are due to mali-                            raw data and therefore do not require data abstraction. Lastly,
+cious attacks. Sensor readings may be influenced for a                           [28] and [31] employed Bayesian networks and signal entropy
+variety of reasons prompting the transmission of faulty                          to detect anomalies in in-vehicular networks and autonomous
+information [9], [22], [23]. For instance, sensors in CAVs                       robotic vehicles. However, these methods require synchronized
+may be blinded by magnetic interference, signal outage,                          data sources and high-volume attacks to perform well.
+poor weather conditions, and other environmental circum-                             Several gaps are apparent in the literature. First, to the best
+stances. Furthermore, as sensors age, inherent errors are                        of our knowledge, there is a lack of deep learning implemen-
+introduced which may result in sensor failure, there-                            tations in anomaly detection and identification for CAVs. Data
+fore, affecting data availability. Faulty sensors, therefore,                    are becoming more readily available and deep learning models
+pose significant risks to the operation of CAVs since                            are renowned for their performance using large datasets,
+their safe operation depends on information obtained from                        therefore such models may be able to outperform traditional
+sensors.                                                                         anomaly detection techniques such as Kalman filtering with
+   Sensor redundancy is a measure that can be implemented to                     failure detectors. In addition, there is a lack of comprehensive
+protect CAVs against anomalous sensor behavior. The majority                     frameworks combining different anomaly detection and iden-
+of CAV manufacturers are expected to incorporate multiple                        tification methods that incorporate the strengths and negate
+sensors that measure the same parameter [11]. For instance,                      the weaknesses of the individual anomaly detection methods
+CAVs may utilize various sensor systems such as cameras,                         in CAVs. Lastly, applications focusing on real-time detection
+radio detection and ranging (RADAR), light detection and                         and identification of anomalous information (such as cyber
+ranging (LIDAR), and ultrasonic sensors for lane keeping                         attacks and/or faulty sensors) are limited.
+purposes as well as GPS to assist navigation. To illustrate                          Before mass implementation of CAVs into the transporta-
+the importance of sensor redundancy, consider a short-term                       tion system, we need to ensure that the design of CAVs is
+loss of a GPS signal in a CAV as it passes through a tunnel.                     resilient to cyber attacks and faulty equipment. This study
+In such a scenario, information from redundant sensors such                      assumes that the participating vehicles are of levels 4 and 5
+as the inertial measurement unit (IMU), RADAR, and LIDAR                         automation, as defined by the National Highway Traffic Safety
+can be used to approximate vehicle location until all systems                    Administration (NHTSA) [32]. Our main objective in this
+are online again. In this example, sensor redundancy proves                      study is to detect anomalous sensor behavior and identify the
+useful since sensors collecting the same data are not affected                   source anomalous sensor in real-time for CAVs to assure the
+similarly by environmental factors; e.g., the factors that lead                  high reliability of fused data. Our framework is generic in
+to a lack of access to GPS signal do not affect RADAR.                           that a ‘sensor’ may refer to any of the on-board sensors in
+Additionally, different types of sensors collecting the same                     a CAV, or another connected vehicle or roadside unit (RSU)
+data may have various degrees of precision as well as various                    that is communicating with the CAV. Specifically, we develop
+levels of vulnerability to different cyber attack types. For                     a holistic and generic framework by combining a deep learning
+instance, if a vehicle’s machine vision, used for obstacle                       technique, i.e., CNN, and Kalman filtering with a χ 2 -detector,
+detection through video image processing, is attacked by                         and investigate their ability to detect and identify various types
+using a high-brightness infrared LED, the redundant obstacle                     of anomalous behavior in real-time. In addition, we perform
+detection sensors including RADAR and LIDAR would be                             various experiments to investigate the effects of anomaly type,
+unaffected. Hence, sensor redundancy can lead to improved,                       magnitude, and duration.
+dynamic sensor fusion in which anomalous sensor readings,                            Anomalous sensor readings, caused by attacks or fail-
+due to either faults or attacks, can be discarded while the                      ures, can present themselves in different ways. Several
+
+    Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+1266                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+network attack taxonomies are available in the literature.                          the KF model throughout), developed independently to detect
+Bhuyan et al. [38] summarize the taxonomy of intru-                                 anomalies caused by cyber attacks and/or faulty equipment,
+sions or attacks in computer network systems, which encom-                          in a CAV trip. Next, we develop a framework that combines the
+pass CAVs. Also, several faulty sensor behaviors are discussed                      two methods in order to improve detection and identification
+in [43]. In this paper, we consider the anomalous sensor                            capabilities by relying on their respective individual strengths.
+behavior resulting from both false injection attacks and sensor                     CNN was mainly selected due to its ability to capture temporal
+failures. According to the literature, anomalous sensor behav-                      patterns, relationship between various sensors, and its capa-
+ior can be represented by the five main following types:                            bility to automatically extract features while weight sharing.
+   1) Instant: A sharp, unexplained change in the observed                          All these make CNN particularly suitable as large amounts of
+       data between two successive sensor readings.                                 data are becoming available. However, there is always a risk
+   2) Constant: A temporarily constant observation that is                          of unknown/unseen patterns going undetected when relying
+       different from the “normal” sensor readings and is                           only on CNNs. Hence, using an architecture that combines
+       uncorrelated to the underlying physical phenomena.                           CNN and KF can provide an additional level of reliability
+   3) Gradual drift: A small and gradual drift in observed data                     for the task at hand, as CNN and KF are complementary
+       during a time period. It can result in a large discrepancy                   in their ability to detect anomalies. It is worth noting that
+       between the observed data and the true state of the                          we also explored recurrent neural networks (RNNs) with long
+       system in time.                                                              short-term memory (LSTM) units; however, CNN consistently
+   4) Bias: A temporarily constant offset from the sensor                           outperformed RNN in all preliminary experiments. This is
+       readings.                                                                    partly because in this particular application, there are many
+   5) Miss: Lack of available data during a time period.                            normal values between consecutive anomalous values, which
+   In this paper, consistent with literature [38], [43], we focus                   generally makes it hard for RNN to distinguish between
+on detection and identification of anomalous behavior, caused                       anomalous and normal values in an extended sequence of
+by either cyber attacks or faulty sensors, resulting in ‘instant,’                  data [54].
+‘constant,’ ‘gradual drift,’ and ‘bias.’ These types of anomalies                      In general, the inputs to the model are the data collected
+are some of the most dangerous for CAVs [16], [41]. In this                         from sensors, reading the same or highly correlated physical
+paper, we do not explicitly account for ‘miss,’ which can result                    quantities. Based on the input data, at every time step, e.g.,
+from DoS attacks preventing the exchange of information.                            a few milliseconds (ms), outputs are generated as to whether
+However, note that ‘miss,’ depending on its duration, can be                        anomalies are present (detection) and if so, which sensor read-
+viewed as ‘instant’ or ‘constant’ behaviors, where the sensor                       ing(s) are erroneous (identification). Consequently, erroneous
+reading is non-existent instead of showing a wrong value.                           data can be excluded and normal data can be seamlessly fused
+Hence, it can partially be addressed using the same methods                         to support CAV operation. Please note that all notation used
+for detecting ‘instant’ or ‘constant’ behaviors. Regardless,                        are summarized in Table IX in the supplementary material.
+we acknowledge that the considered anomaly types may not                            A. Kalman Filter
+encapsulate all possible types of anomalies expected to occur
+in CAVs.                                                                            As discussed, Kalman filter combined with a failure detector is
+   In this paper, we develop an anomaly detection approach                          a well-established, widely used method for fault detection and
+through combining a deep learning method, namely convolu-                           identification in time-series data. In order to detect and identify
+tional neural network (CNN), with a well-established anom-                          anomalous sensor readings, we use an adaptive Kalman filter
+aly detection method, Kalman filtering with a χ 2 -detector,                        with a χ 2 -detector to filter out process and measurement noise.
+to detect and identify anomalous behavior in CAVs. Our main                         Specifically, we assume our physical system is a discrete-time
+contributions are as follows: (1) We develop an anomaly                             linear time-invariant system in the following form:
+detection and identification approach based on convolutional                                           x(k) = Ax(k − 1) + w(k − 1)                               (1)
+neural networks (CNN), applied to time-series data obtained
+from multiple sensors. Our use of the CNN for anomaly                               where x(k) ∈ Rm is the vector of state variables at time k,
+detection in time-series data is novel, where we generate                           w(k) ∈ Rm is the process noise at time k, and A ∈ Rm×m is
+‘images’ from a continuous feed of real-time raw sensor                             the state-transition matrix.
+data from a fixed-width sliding window and classify these                             As discussed, we consider redundant sensor in this study.
+images as anomalous or normal; (2) We develop a new                                 Let n denote the number of these sensors. That is, we consider
+generic anomaly detection and identification approach through                       n local subsystems, corresponding to the redundant sensors,
+combining CNN with a well-established anomaly detection                             with measurement matrices H (k) ∈ R p×m and sensing model:
+method, i.e., Kalman filtering with a χ 2 -detector. The resulting                            z i (k) = H (k)x(k) + v i (k), i = 1, 2, . . . , n                 (2)
+CNN-empowered KF (CNN-KF) framework can effectively
+detect and identify sensor anomalies.                                               where v i (k) ∈ R p is zero mean Gaussian white noise
+                                                                                    sequences associated with the process and the measurement.
+                                II. M ETHODS                                        The covariance matrices of v i (k) ∈ R p and w(k) are Ri (k) and
+In this section, we first discuss the two models that form the                      Q(k), respectively. We assume v i (k) and w(k) are indepen-
+building blocks of our framework, namely the CNN model                              dent. In equation (2), z i (k) = [z i,1 (k), z i,2 (k), . . . , z i, p (k)]T ∈
+and the Kalman filter with a χ 2 -detector model (referred to as                    R p is a vector of sensor measurements for subsystem
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+VAN WYK et al.: REAL-TIME SENSOR ANOMALY DETECTION AND IDENTIFICATION IN AUTOMATED VEHICLES                                                                   1267
+
+
+
+i ∈ {1, . . . , n}. We assume all n subsystems have the same                     Specifically, for various values of M in our grid search,
+measurement matrix H (k) and the readings across all subsys-                     we computed the Area Under the ROC Curve (AUC) on a
+tems are synchronized.                                                           validation dataset. The results suggested that M ∈ {10, 15, 20}
+    For each subsystem, a Kalman filter is used to estimate                      provides robust results and high AUC (≈ 0.96). The AUC
+the state vector x(k) from sensor reading z i (k). Kalman                        values within this range are similar. Hence, consistent with
+filter consists of two phases, i.e. prediction and update. The                   previously published work (e.g., [44]), we selected the window
+prediction phase advances the state estimate before the next                     size M = 15 epochs for our experiments.
+measurement, and the update phase corrects the state estimate                       Once a faulty measurement stream has been identified,
+based on the measurement.                                                        in order to ensure the future estimate is reliable, the measure-
+    Let ẑ(k|k − 1) denote the predicted value of measurement                    ment stream should be rejected at once and not fused with
+at time k, P(k|k − 1) denotes the error covariance matrix                        other measurements to ensure that the information generated
+of predicted state, and ν(k) denote the innovation, i.e., the                    through data fusion is not contaminated.
+difference between the measurement z(k) and the predicted
+value of measurement at time k,                                                  B. CNN
+                                                                                 To apply CNN for real-time detection and identification of
+                    ν(k) = z(k) − ẑ(k|k − 1).                            (3)    anomalous sensor behavior, we use a fixed-width sliding win-
+Also let S(k) denote covariance matrix of innovation.                            dow on input data from all sensors measuring the same quan-
+In practice, covariance matrices R and Q are generally                           tity, either directly or indirectly, where conversions or com-
+unknown a priori. Thus, we apply an adaptive Kalman filter to                    bining with other sensors may be required to infer the value
+approximate these matrices [42]. Specifically, we use a moving                   of the quantity. At every epoch, as new observations are
+estimation window of size M to adaptively estimate R and                         collected from sensors, the sliding window shifts to include
+Q matrices according to the innovation sequence within the                       these latest observations. Hence, the input to CNN is a series
+time window, i.e.,                                                               of ‘images’ from the continuous feed of raw sensor data during
+                                                                                 a CAV trip. For instance, consider three sensors (e.g., GPS,
+            R̂(k) = Ĉν (k) − H (k)P(k|k − 1)H (k)T ,                            accelerometer, and transmission vehicle speed sensor) mea-
+           Q̂(k) = K (k)Ĉν (k)K (k)T ,                                   (4)    suring vehicle speed at the sampling interval of 0.1 seconds.
+                                                                                 Hence, an image of size 3×10 would include the data collected
+where                                                                            from the three sensors during the last one second of the trip.
+                             1     
+                                   k−1                                           The CNN therefore utilizes the data from multiple sensors
+                 Ĉν (k) =                 ν( j )ν( j )T .                (5)    simultaneously for detection and identification of anomalous
+                             M
+                                  j =k−M                                         values.
+  We use a χ 2 -detector to construct χ 2 test statistics, to deter-                CNN models are trained to evaluate these images to detect
+mine whether the new measurement falls into the gate region                      and identify anomalies in real-time. Specifically, a sliding
+with the probability determined by the gate threshold γ ,                        window is used on retrospectively collected data from sensors
+defined as                                                                       to produce images for training and testing. Because the goal
+                                                                                 is both to detect and to identify anomalies, for each sensor we
+Vγ (k) = {z :(z − ẑ(k|k − 1))T S(k)−1 (z − ẑ(k|k − 1)) ≤ γ }.                  train a separate model using labeled images, i.e., supervised
+                                                                          (6)    learning. That is, if an anomaly is present in an image con-
+                                                                                 structed with the data from the sensor of interest, the response
+The χ 2 test statistics for each local subsystem is defined as                   variable is set to 1; otherwise, it is set equal to 0. Once
+                     t (k) = ν(k)T S(k)−1 ν(k)                            (7)    separate models are trained to identify anomalies for each
+                                                                                 sensor, a logical OR operator on the outcomes of the all such
+   It is easy to show that under Gaussian assumption the test                    models determines whether anomalous readings are detected
+statistic has a χ 2 distribution with p degrees of freedom, where                across all sensors.
+p is the number of components of the measurement vector.                            In our experiments, for each CNN model, a popular image
+However, in practice, usually w and v i do not follow Gaussian                   recognition architecture from the literature is adopted [36]. The
+distributions, and parameter γ has to be selected empirically.                   parameter values for this architecture are then selected based
+Hence, the threshold γ for t (k) and the time window size M                      on a number of experiments performed to maximize anomaly
+can be tuned.                                                                    detection and identification performance on a validation set.
+   Selection of the threshold γ is a trade-off between sen-                      In short, we used three convolution layers with max-pooling,
+sitivity of the trained model (i.e., the proportion of correctly                 followed by two fully connected layers with random dropout
+identified anomalies), and the false-alarm rate. For each exper-                 between the layers. A 1 × 2 pool size is used and 40, 60,
+iment in our experiment section, we select γ using a grid                        and 60 filters are used for convolutional layers one to three,
+search within the range {1, 2, . . . , 50}, and select the value of              respectively. Also, a random dropout rate of 0.1 and batch size
+γ resulting in the highest F1 score.                                             of 128 is used to train the CNN models. Furthermore, rectified
+   The window size M is a parameter that allows for the                          linear unit (ReLU) activation functions are used and the
+control of smoothing short-term fluctuations in the detector.                    Adam optimizer for Tensorflow in Python is implemented to
+To select the best value for M, we performed a grid search.                      minimize binary cross-entropy [35]. The following parameters
+
+    Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+1268                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+                                                                                    mainly because having the Kalman filter in the last layer of
+                                                                                    learning allows for the reliable fusion of the non-anomalous
+                                                                                    sensor values [33], which is important from a practical per-
+                                                                                    spective for the application considered. In addition, based on
+                                                                                    our preliminary experiments, CNN-KF generally outperforms
+                                                                                    KF-CNN. Hence, we opted to present the results for
+                                                                                    CNN-KF only.
+
+                                                                                                                     III. DATA
+                                                                                    The data for this study is obtained from the research data
+                                                                                    exchange (RDE) database for the Safety Pilot Model Deploy-
+                                                                                    ment (SPMD) program [34]. This program was conducted
+                                                                                    with the primary objective of demonstrating CAVs, with the
+                                                                                    emphasis on connectivity technologies such as V2V and
+Fig. 1. Overview of the CNN-KF Framework. At each time epoch, the sensor            V2I communications in real-world conditions. The program
+readings collected within the past several time epochs are used as an input
+‘image’ to the CNN-KF Framework. The data are first processed with a
+                                                                                    recorded detailed and high-frequency (collected every 100ms)
+CNN to detect and identify sensors with anomalous readings. Next, the               data for more than 2,500 vehicles over a period of two years.
+CNN-verified non-anomalous data are fed to the KF model to further detect           The data features extracted from the SPMD dataset used in
+and identify anomalies to increase reliability.
+                                                                                    this study include the in-vehicle speed (denoted as sensor 1),
+                                                                                    GPS speed (sensor 2), and in-vehicle acceleration (sensor 3)
+                                                                                    for one of the test vehicles with a trip length of 2,980 seconds.
+were used for the Adam optimization algorithm: learning rate,
+                                                                                    Note that the in-vehicle speed and GPS speed sensors observe
+α = 0.001, exponential decay rates, β1 = 0.9, β2 = 0.999,
+                                                                                    the same quantity, namely, speed, whereas the acceleration
+and a fuzz factor,  = 10−8 .
+                                                                                    sensor observes the vehicle’s acceleration which can be used
+   It is widely acknowledged that deep learning models such
+                                                                                    to infer speed.
+as CNNs are often subject to ‘overfitting’ during the training
+                                                                                       Since there are no publicly available datasets for CAVs
+process [36], [37]. To reduce the risk of overfitting, in addition
+                                                                                    that include anomalies in sensor measurements, due to either
+to random dropouts, we use early stopping to monitor the
+                                                                                    attacks or faults, and the ground truths, we used simula-
+accuracy of the validation set with a patience of 200 epochs.
+                                                                                    tion to generate datasets for our experiments. Specifically,
+Therefore, when training a CNN model, starting from any
+                                                                                    we accounted for the four major anomaly types including
+training epoch, if the validation accuracy during the following
+                                                                                    instant, constant, gradual drift, and bias. We inject all four
+200 epochs does not increase, training is terminated and
+                                                                                    types of anomaly into each of the three speed-related (redun-
+the model corresponding to 200 training epochs ago, which
+                                                                                    dant) sensors. We assume the onset of anomalous values in
+resulted in the highest validation accuracy, is selected.
+                                                                                    sensors, due to either attacks or faults, occur independently.
+                                                                                    That is, we do not explicitly train models on datasets contain-
+C. CNN-Empowered Kalman Filter (CNN-KF)                                             ing interdependent sensor failures or systemic cyber attacks
+In order to further improve upon the detection and identifi-                        on vehicle sensors. Additionally, we assume that no more
+cation performances of the individual KF and CNN models,                            than one anomaly can start in every time epoch, which is
+we develop a new framework that relies on both CNN and                              indeed very unlikely considering that sensors are generally
+Kalman filter as shown in Figure 1. In this framework,                              reliable, and attacks/faults to sensors occur independently.
+first CNN models process the images of raw data from                                However, dependent on the types, onset times, and durations
+all sensors, which are obtained by using a sliding window                           of anomalies, multiple sensors may be anomalous at the same
+over all sensor readings, to identify whether the readings                          time.
+from each sensor are normal or anomalous. Consequently,                                There is existing work that illustrates the sensors considered
+the sensors with anomalous behavior are excluded and the                            in our numerical study, i.e., speed and acceleration sensors,
+readings from normal sensors are separately fed into adaptive                       are vulnerable to cyber attacks or faults (e.g., see [16],
+Kalman filters with failure detectors for further examination                       [50], [51]). For in-vehicle speed and acceleration sensors,
+and anomaly detection. If Kalman filter detects anomalies that                      an injection attack through the CAN bus or the on-board
+are missed by CNN, the readings from the corresponding                              diagnostics (OBD) system, could give rise to the four types
+sensors are excluded and the remaining normal data are fused                        of anomalies considered in this paper. Also, for the in-vehicle
+in order to achieve a higher degree of reliability. As time                         acceleration sensor, an acoustic injection attack could result in
+passes and the vehicle continues its trip, if the sensors that                      anomalous sensor values. Lastly, for the speed measurement
+presented anomalies go back to normal behavior, as verified                         from the GPS, both the operating environment of the vehicle
+by both CNN models and Kalman filters, the exclusion is no                          and GPS spoofing/jamming attacks may result in anomalous
+longer necessary and hence, the readings of the previously                          sensor values.
+excluded sensors would be used in fusion again. In this                                We generate various datasets for our experiments at 1%
+study, we use a CNN-empowered Kalman Filter (CNN-KF),                               or 5% rates of anomalies, denoted by α. We simulate
+as opposed to a Kalman Filter empowered CNN (KF-CNN),                               the anomalies to occur at randomly selected onset times
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+VAN WYK et al.: REAL-TIME SENSOR ANOMALY DETECTION AND IDENTIFICATION IN AUTOMATED VEHICLES                                                                   1269
+
+
+
+(discretized into 100ms) to randomly selected sensors. To sim-                      We evaluate the performance of the models in terms of accu-
+ulate the corresponding attacks/faults, these anomalies are then                 racy, sensitivity, precision, and F1 score. Accuracy measures
+added to each affected sensor’s ‘base value,’ i.e., the normal                   the overall proportion of correct predictions for normal and
+sensor readings in the original dataset indicating the traveling                 anomalous sensor values. Sensitivity assesses the proportion
+speed of the CAV at the time that the anomaly was introduced.                    of correctly identified anomalous sensor values from the total
+Algorithm 1 presents the pseudo code used for simulating the                     number of anomalous sensor values. Precision measures the
+anomalies. Note that vectors Vi and Vi , i ∈ {1, 2, . . . , n},                 proportion of anomalous sensor values among those predicted
+denote non-anomalous and anomalous readings for sensor i ,                       as anomalous. Lastly, F1 score is the harmonic mean of sensi-
+respectively. To facilitate thorough experiments, we vary the                    tivity and precision. These metrics are particularly chosen as
+simulated anomalies in type, magnitude and/or duration when                      they measure the ability of the models to correctly differentiate
+generating the datasets. In addition, dependent on the experi-                   between normal and anomalous sensor behavior. Note that
+ment, we generate datasets where we randomly sample from a                       these metrics are commonly used to evaluate the performance
+set of one or all anomaly types. The exact types of anomalies                    of classification models. Here, for consistency and to enable
+considered as well as their magnitude (and duration) will be                     comparison of all models, we use the same metrics to evaluate
+discussed in detail for each experiment in Section IV.                           the performance of CNN, KF, and CNN-KF models.
+
+                                                                                 A. Models Under a Single Anomaly Type
+Algorithm 1 Anomaly Generation Process
+ 1: α ← anomaly rate; n ← number of sensors
+                                                                                 In this section we compare the detection performance of the
+ 2: for time epoch t ∈ T do
+                                                                                 three models for the specific types of anomalies, as discussed
+ 3: if U(0, 1) ≤ α then
+                                                                                 in Section I, namely, instant, constant, gradual drift, and bias.
+ 4:     ζ ← U(0, 1)                                                              We generate various datasets, each with a specific type of
+ 5:     for i ∈ {1, 2, . . . , n} do                                             anomaly, with anomaly rate α = 5%. For each dataset, we train
+          if ζ ≥ i−1                                                             and test CNN models to measure their performance in detect-
+                   n and ζ < n then
+                                     i
+ 6:
+ 7:         Generate anomaly; Vi ← Vi + anomaly                                 ing the specific anomaly type. Because each sensor reading
+ 8:       end if                                                                 in our experiment is one dimensional, the state transition
+ 9:     end for                                                                  matrix A and measurement matrix H for KF are simply single
+10: else
+                                                                                 values.
+                                                                                    1) Instant: The instant anomaly type is simulated as a
+11:     Vi ← Vi , i ∈ {1, 2, . . . , n}
+12: end if
+                                                                                 random Gaussian variable with mean and variance of zero
+                                                                                 and 0.01, respectively, that is scaled by a scalar c ∈ {25, 100,
+13: end for
+                                                                                 500, 1,000, 10,000}, i.e., c × N (0, 0.01), to capture various
+                                                                                 magnitudes. The resulting simulated value is added to the base
+                                                                                 value of sensor measurement for one epoch, i.e., 100 ms.
+                             IV. R ESULTS                                           Table I illustrates the anomaly detection performance of the
+In this section, we perform various analyses to investigate                      KF, CNN, and CNN-KF models. Considering the detection
+the anomaly detection and identification performance of the                      performance of KF and CNN models, the following is noted.
+three models discussed in Section II. Specifically, we present                   In general the detection performance of the KF and CNN
+the results obtained when using Kalman filter (KF) and                           models increases across all metrics in the magnitude of the
+CNN alone, and compare their performance to highlight their                      instant anomaly type, which is consistent with the intuition.
+respective capabilities. In addition, we present the results                     For small magnitudes of anomalous sensor values, i.e., the first
+obtained using CNN-KF framework and compare and contrast                         two rows in Table I, the detection performance of the models
+its performance with those of KF and CNN alone. We first                         are poor. However, in these cases the difference between the
+investigate the detection performance of all three models when                   anomalous sensor values and non-anomalous sensor values are
+trained and tested for a single anomaly type in Section IV-A-A.                  generally too small to pose any substantial risks to the opera-
+We then investigate the detection and identification perfor-                     tion of the vehicle. For magnitudes that may pose significant
+mance of the three models when trained and tested in the                         risk to the operation of the vehicle, i.e., rows 3–5, the models
+presence of all anomaly types in Section IV-B.                                   are able to detect anomalous behavior with high performance.
+   In our analyses, we use various datasets in which we                          As seen in the table, KF and CNN models have similar
+simulate various types of anomalies of different durations                       performance for instant anomalies with large magnitudes. The
+and magnitudes to draw insights from the use of CNN, KF,                         CNN models generally outperform KF models in terms of
+and the CNN-KF models to detect/identify anomalies in                            sensitivity, precision, and F1 score. Particularly, sensitivity
+real-time. Note that we need to select the parameter γ for                       is higher in CNN models, which can directly impact the
+KF models and also extensively train CNN models and tune                         reliability and safety of fused data in CAVs. A reason for this
+their many parameters. Hence, for any given dataset, we use                      higher performance of CNN models compared to KF models
+a training/validation/testing split of 60%/20%/20%. We use                       is that when the anomalies are small enough, the attack will
+the training and validation sets to tune the model parameters.                   fall into the region of gating for the KF model, therefore it
+Next, to objectively evaluate their performance levels, we use                   cannot be detected by the chi-square test, which results in a
+the separate test sets for testing.                                              low sensitivity measure. Additionally, unlike the KF models
+
+    Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+1270                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+                                                                              TABLE I
+                            D ETECTION P ERFORMANCE OF I NSTANT A NOMALY T YPE FOR THE KF, CNN AND CNN-KF M ODELS
+
+
+
+
+                                                                             TABLE II
+                             D ETECTION P ERFORMANCE OF C ONSTANT A NOMALY T YPE FOR KF, CNN AND CNN-KF M ODELS
+
+
+
+
+that use the readings by a single sensor over time to detect                        rows 1–3, the performance of the KF and CNN models
+any potential anomalies on that sensor, the CNN models                              generally increases in anomaly duration, given that anomaly
+use the readings from all sensors within a time window to                           magnitudes are drawn from the same random variable. In these
+detect anomalous behavior by each individual sensor. This                           cases, because the anomaly magnitude can be somewhat
+redundancy in information improves the CNN performance                              large, KF generally outperforms CNN. Similarly, as seen in
+when the anomaly magnitudes are small and therefore harder                          rows 3–5, given a fixed anomaly duration (with d = 10),
+to detect.                                                                          the performance of both KF and CNN models are typically
+   Considering the anomaly detection performance of the                             better when the anomaly magnitudes are generally larger.
+CNN-KF model for the instant anomaly type, the following                            In general, similar to the detection performance of the instant
+is noted. Similar to the results for KF and CNN models,                             anomaly type, the KF model slightly underperforms compared
+the detection performance across all metrics increases in                           to the CNN model in the case of low magnitude anom-
+anomaly magnitude. Furthermore, it is seen that, in general,                        alies (rows 4–5) and slightly outperforms the CNN model
+the CNN-KF model improves upon the detection performance                            in detecting anomalies with stochastically larger magnitudes
+of both KF and CNN models as reported in Table I. For                               (rows 1–3). In addition, the CNN model generally illustrates a
+instance, for instant anomalies of magnitude 25 × N (0, 0.01)                       more consistent detection performance across various anomaly
+added to the base value (row 1), it is seen that sensitivity and                    magnitudes and durations compared to KF.
+F1 score of the CNN-KF model respectively increase by 13.1%                             Considering the anomaly detection performance of the
+and 18.9% over the KF model, and by 1.6% and 1.4% over the                          CNN-KF model for the constant anomaly type, the follow-
+CNN model. Note that the F1 scores of CNN-KF are larger                             ing is noted. The results illustrate that the CNN-KF model
+than those of CNN in rows 4–5; these numbers only appear                            outperforms the KF model when the magnitude of anom-
+to be the same as the numbers in the table are rounded to one                       alies is relatively small, i.e., in rows 4–5. In addition, the
+decimal place. Lastly, note that for anomalies with very large                      CNN-KF model clearly outperforms the CNN model with
+magnitudes (row 5), high performance is found in all models,                        respect to accuracy, sensitivity, and F1-score across all exper-
+especially for KF.                                                                  iments. Note that the magnitude of gain in performance is
+   2) Constant: The constant anomaly type is simulated as                           larger when comparing CNN-KF with KF, as opposed to
+a temporarily constant observation that is different compared                       when comparing CNN-KF with CNN. For instance, in row 5,
+to the “normal” sensor readings. Similar to the previous                            using the CNN-KF model, as opposed to the KF model,
+case, we simulate the magnitude of the anomaly that is                              increases the sensitivity and F1 score by up to 9% and 7.6%,
+added to the base value at the onset of the anomaly using                           respectively. Compare these numbers, respectively, with the
+a random variable to capture various magnitudes in any given                        observed increases of up to 2.6% and 1.1% when using
+experiment. Specifically, the magnitude of a given anom-                            the CNN-KF model, as opposed to the CNN model. Note
+aly is sampled from a uniform distribution U(0, c), where                           that the improved performance of CNN-KF model over the
+c ∈ {1, 3, 5}. In addition, here we account for various durations                   CNN model is mainly due to the ability of the Kalman
+of the anomalous behavior. Let d denote the number of epochs                        filtering aspect of the CNN-KF model to detect the onset
+during which the anomalous behavior is present, where we use                        of anomalous behavior faster than that of the CNN model,
+d ∈ {3, 5, 10}.                                                                     especially for larger anomaly magnitudes. Lastly, similar to
+   Table II shows the results of the constant anomaly                               the results in Table I, it is seen that KF outperforms CNN-KF
+type for the KF, CNN, and CNN-KF models. As seen in                                 for anomalies with large magnitudes.
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+VAN WYK et al.: REAL-TIME SENSOR ANOMALY DETECTION AND IDENTIFICATION IN AUTOMATED VEHICLES                                                                   1271
+
+
+
+                                                                          TABLE III
+                     D ETECTION P ERFORMANCE OF G RADUAL D RIFT A NOMALY T YPE FOR THE KF, CNN AND CNN-KF M ODELS
+
+
+
+
+                                                                          TABLE IV
+                              D ETECTION P ERFORMANCE OF B IAS A NOMALY T YPE FOR KF, CNN AND CNN-KF M ODELS
+
+
+
+
+   3) Gradual Drift: The gradual drift anomaly type is simu-                     using a random variable to capture various magnitudes in
+lated by adding a linearly increasing set of values to the base                  any given experiment. Specifically, the magnitude of a given
+values of the sensors. Specifically, we use a vector of linearly                 anomaly is sampled from a uniform distribution U(0, c), where
+increasing values from 0 to c ∈ {2, 4}, corresponding to 2 m/s                   c ∈ {1, 3, 5}. In addition, here we account for various durations
+and 4 m/s, respectively, denoted by the function linspace(0, c).                 of the anomalous behavior, where the sampled magnitude is
+In addition, here again we account for various durations of                      added to all true sensor readings during the specified duration
+the anomalous behavior, namely, d ∈ {10, 20}. For instance,                      to generate the anomalous readings. Let d denote the number
+when c = 4 and d = 20, a linearly increasing speed of up                         of epochs during which the anomalous behavior is present,
+to 4 m/s (i.e., with an intercept of 0 and a slope of 4/19) is                   where we use d ∈ {3, 5, 10}.
+added to the base speed of the CAV over the next 20 epochs                           Table IV shows the results of the bias anomaly type for
+(i.e., 2 seconds).                                                               the KF, CNN, and CNN-KF models. As seen in rows 1–3,
+   Table III shows the results of the gradual drift anomaly type                 the performance of the KF and CNN models generally
+for the KF, CNN, and CNN-KF models. Gradual drift is one of                      increases in anomaly duration, given that anomaly magnitudes
+the most difficult anomalies to detect since it increases sensor                 are drawn from the same random variable. Similarly, as seen
+values gradually, therefore making it challenging to detect the                  in rows 3–5, given a fixed anomaly duration (with d = 10),
+onset of anomalous sensor behavior and differentiating it from                   the performance of both KF and CNN models generally
+normal behavior. Nevertheless, KF and CNN perform reason-                        decrease when the magnitude of anomalies stochastically
+ably well across various values of magnitude and duration                        decrease. Interestingly, different from previous cases, in this
+considered. Similar to the constant anomaly type, the detection                  case the KF model consistently outperforms the CNN model
+performance of the CNN model increases in duration and                           in all cases examined.
+magnitude of the anomalous sensor behavior. Furthermore,                             Considering the anomaly detection performance of the
+as seen in the table, CNN models consistently outperform                         CNN-KF model for the bias anomaly type, the following is
+KF models across all magnitudes and durations for the gradual                    noted. The results illustrate that the CNN-KF model outper-
+drift anomaly type. That is mainly because the sliding window                    forms the KF model when the magnitude of anomalies is
+implementation of CNN provides additional opportunities to                       relatively small and their duration is relatively long, i.e., in
+detect gradual drift anomalies compared to KF. This generally                    rows 3–5. In addition, the CNN-KF model clearly outperforms
+leads to an improved detection performance, even if the                          the CNN model with respect to sensitivity and F1-score across
+anomaly onset is missed by CNN, which is often the case                          all experiments. The improved performance of CNN-KF model
+for gradual drift anomalies.                                                     over the CNN model is mainly due to the ability of the Kalman
+   Considering the anomaly detection performance of the                          filtering aspect of the CNN-KF model to detect the onset
+CNN-KF model for the gradual drift anomaly type, the follow-                     of anomalous behavior faster than that of the CNN model,
+ing is noted. As seen in Table III, this model outperforms both                  especially for larger anomaly magnitudes.
+KF and CNN models across all experiments. For instance, in                           In conclusion, as seen in Table I, CNN-KF generally out-
+row 4, using the CNN-KF model, the sensitivity and F1 score                      performs both CNN and KF in detecting the instant anomaly
+respectively increase by 6.7% and 9.2% compared to the KF                        type. KF only outperforms CNN-KF when the magnitude of
+model, and by 1.2% and 0.6% compared to the CNN model.                           the anomaly is very large. As seen in Table II, the CNN and
+   4) Bias: The bias anomaly type is simulated as a temporar-                    CNN-KF models perform better for anomalies with smaller
+ily constant offset from the baseline sensor readings. Similar to                magnitudes. Similar to Table I, KF performs better for anom-
+the previous cases, we simulate the magnitude of the anomaly                     alies with large magnitudes but less so for anomalies with
+
+    Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+1272                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+small magnitudes. This is due to the fact that when the                                                               TABLE V
+anomalies are small enough, they fall into the gating region of                       I DENTIFICATION P ERFORMANCE OF T RAINING CNN M ODELS ON O NE
+                                                                                         T YPE OF A NOMALOUS S ENSOR VALUES AND T ESTING T HEM TO
+the KF model; therefore, they cannot be detected by the chi-                                  I DENTIFY A NOMALOUS S ENSOR VALUES W HERE A LL
+square test. Also, as seen in Table III, the CNN-KF model out-                                   A NOMALY T YPES A RE P RESENT. T HE R EPORTED
+performs both KF and CNN models across all magnitudes and                                                VALUES A RE IN P ERCENTAGES
+durations considered for the gradual drift anomaly type. This
+is mainly because CNN-KF combines the strength of CNN
+where the sliding window implementation provides additional
+opportunities for detection and the ability of KF in detecting
+the first few epochs of these anomalies. Lastly, as seen
+in Table IV for the bias anomaly type, consistent with the
+results in Tables I–III, the CNN-KF models perform well for
+anomalies with small magnitudes and long duration whereas
+KF performs better for anomalies with large magnitudes and
+a small duration.
+
+
+B. Models Under Mixed Anomaly Types
+In this section we investigate the performance of the models
+when applied in detection and identification of various types of                    given anomaly type. In the test dataset, the instant, constant,
+anomalies as opposed to the single anomaly types considered                         gradual drift, and bias anomalies are all present and are mod-
+in Section IV-A-A. First, we investigate the generalizability of                    eled using 1,000×N (0, 0.01), U(0, 5) with d = 10 epochs,
+the models presented in Section IV-A-A with respect to unseen                       li nspace(0, 4) with d = 20 epochs, and U(0, 5) with d = 10
+anomaly types to motivate the need to develop CNN-based                             epochs, respectively. For instance, for the first case illustrated
+models under mixed anomaly types. Next we develop new                               in Table V, we train the CNN with the instant anomaly type
+models, trained and tested in the presence of all four anomaly                      where anomalies are sampled from 1,000×N (0, 0.01) and we
+types, where the simulation is run multiple times to provide                        test the model on the test set where all four anomaly types are
+confidence intervals (CIs). Specifically, we present the mean                       present.
+performance along with the 95% CIs, and perform statistical                             As seen in Table V, training the CNN model using only
+tests to establish whether or not the observed improvements                         instant anomalous sensor values results in poor performance,
+across models are significant. In addition, we analyze the                          and particularity low sensitivity. This is expected, since the
+effect of the rate at which anomalous sensor values may occur                       constant, gradual drift, and bias anomaly types are very
+(at α = 5% and α = 1%) on the performance of the models.                            different from the instant anomaly type in both magnitude
+   As seen in Section IV-A-A, CNN and CNN-KF models gen-                            and duration. Also, note that the identification performance
+erally outperform KF models. However, note that in contrast                         generally varies across sensors. Specifically, for sensor 3
+to CNN models, KF models do not require much effort for                             (i.e., in-vehicle acceleration), across all experiments, it is seen
+training and they generalize well; only parameters γ and M                          that the performance metrics are worse than those for the other
+need to be calibrated for KF models. Additionally, as we will                       two speed sensors. This is partly due to the large variability in
+demonstrate in this section, for CNN models to generalize well                      consecutive acceleration measurements compared to the other
+and correctly classify previously unseen observations, they                         two speed sensors that tends to report much smoother readings
+require to be trained on representative training sets. However,                     over time. Lastly, as seen in the table, using the CNN model
+in practice, CAV anomaly detection systems may encounter                            that is trained on either constant, gradual drift or bias anomaly
+various instances of anomalies for which the models are not                         type results in reasonable performance across all sensors with
+explicitly trained. This is particularly important for CAVs since                   an F1 score of up to 90.1%.
+these vehicles will be faced with numerous unfamiliar circum-                           In the next set of experiments, we train the models using
+stances. Here we present the results of using the trained CNN                       datasets in which all types of anomalous sensor values are
+models from Section IV-A-A and testing them on datasets                             present, to estimate the models’ anomaly identification perfor-
+where all types of anomalous sensor values are present.                             mance in practice. Table VI illustrates the identification perfor-
+We break down the results to present the performance of the                         mance and the 95% CIs across 10 simulation runs, when the
+models in terms of anomalous sensor values identification. The                      anomaly rate is set to 5% (α = 5%) and all types of anomalies
+main objective of this analysis is to investigate the degree to                     are present. Similar to the results obtained for the specialized
+which each of these models can generalize to detect/identify                        models in Section IV-A-A, as seen in Table VI, the CNN
+unseen anomalies.                                                                   model generally outperforms the KF model, especially with
+   Table V presents the performance of training CNN models                          respect to sensitivity and F1 score. Furthermore, the CNN-KF
+on one type of anomaly and using them to identify anomalous                         model improves upon the performance of both KF and CNN
+sensor values where all anomaly types are present. Each                             models, especially with regard to F1 score as highlighted in
+case presented across three rows provides the performance                           the table. We perform paired t-tests and one-way ANOVA
+of a trained model on a particular training set with the                            tests to investigate the statistical significance between the
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+VAN WYK et al.: REAL-TIME SENSOR ANOMALY DETECTION AND IDENTIFICATION IN AUTOMATED VEHICLES                                                                   1273
+
+
+
+                                TABLE VI
+     I DENTIFICATION P ERFORMANCE AND THE 95% CI S A CROSS
+    10 D IFFERENT E XECUTIONS FOR A LL T HREE M ODELS , AT THE
+     A NOMALY R ATE OF α = 5% AND IN THE P RESENCE OF A LL
+       T YPES OF A NOMALIES . P-VALUES I NDICATE S TATISTICAL
+          S IGNIFICANCE AT 5% L EVEL U SING PAIRED t -T EST
+             AND O NE -WAY ANOVA T ESTS , B ETWEEN THE
+                I DENTIFICATION P ERFORMANCE OF A LL
+                   PAIRS OF M ODELS . T HE R EPORTED
+                     VALUES A RE IN P ERCENTAGES
+
+
+
+
+                                                                                 Fig. 2. An example illustrating the performance of KF, CNN, and CNN-KF
+                                                                                 models in identifying anomalous sensor values of in-vehicle speed sensor
+                                                                                 readings during a 3-second time window of a CAV trip.
+
+
+                                                                                                                   TABLE VII
+                                                                                        I DENTIFICATION P ERFORMANCE AND THE 95% CI S A CROSS
+                                                                                       20 D IFFERENT E XECUTIONS FOR A LL T HREE M ODELS , AT THE
+                                                                                        A NOMALY R ATE OF α = 1% AND IN THE P RESENCE OF A LL
+                                                                                          T YPES OF A NOMALIES . P-VALUES I NDICATE S TATISTICAL
+                                                                                           S IGNIFICANCE AT 5% L EVEL U SING PAIRED t -T EST AND
+                                                                                                  O NE -WAY ANOVA T ESTS , B ETWEEN THE
+                                                                                                   I DENTIFICATION P ERFORMANCE OF A LL
+identification performance with respect to F1 score between                                           PAIRS OF M ODELS . T HE R EPORTED
+                                                                                                        VALUES A RE IN P ERCENTAGES
+all pairs of models, i.e., KF and CNN models, KF and
+CNN-KF models, and CNN and CNN-KF models. The
+p-values obtained indicate statistical significance at 5% level
+(p-value < 0.05) across all tests performed.
+   Figure 2 presents the in-vehicle speed sensor readings, with
+and without superimposed anomalous sensor values, during a
+3-second time window of a CAV trip in one of the test sets,
+and illustrates the instances at which the anomalous sensor
+values were detected by each of the three models. In this
+example, the anomaly is of type constant, has a relatively
+small magnitude of 0.17 m/s (i.e., results in anomalous sensor
+readings of 18.66 m/s compared to the base speed of 18.49 m/s
+at the anomaly onset), and lasts for a period of d = 10
+epochs or 1 second, i.e., from 980 to 989 time epochs, into the
+CAV trip. As seen in the figure, the KF and CNN models both
+fail to identify all anomalous sensor readings during this 1 sec-
+ond period. In contrast, CNN-KF model identifies all anomaly
+instances. Note that, in this case, the anomalous sensor values
+caused by the constant anomaly type are very small compared                      models. Specifically, the p-values obtained using paired t-test
+to the base speed value, illustrating the effectiveness of the                   and one-way ANOVA tests indicate statistical significance at
+CNN-KF framework in detecting/identifying the anomalous                          5% level between the identification performance of all pairs of
+sensor values.                                                                   models with respect to F1 score. As seen in Tables VI and VII,
+   Lastly, we investigate the effect of the anomaly rate α on                    model accuracy increases when the rate of anomalous sensor
+the identification performance of the trained models. Table VII                  values is at α = 1%, compared to α = 5%, as there are
+illustrates the identification performance and the 95% CIs                       fewer anomalous instances to misclassify; however, F1 score
+when the previously trained models are tested across 20 differ-                  generally decreases at α = 1%, compared to α = 5%. Note
+ent test sets in which the anomaly rate is set to 1% (α = 1%)                    that these results are in general better than those obtained
+and all anomaly types are present. In this experiment we use a                   if the training sets used were at α = 1% anomaly rate,
+larger number of test sets compared to the previous experiment                   particularly for CNN and CNN-KF models. This is mainly
+due to the low anomaly rate. Similar to the α = 5% case illus-                   because if the training set is highly unbalanced, classification
+trated in Table VI, the CNN model outperforms the KF model,                      models tend to favor the more representative class (in our case
+and the CNN-KF model outperforms both the KF and CNN                             ‘normal’ readings) and hence, do not generalize well to detect
+
+    Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+1274                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+anomalous sensor values. This is why when training a model                          anomalous sensor values in real-time with high accuracy,
+on an unbalanced set, either oversampling or undersampling                          sensitivity, precision, and F1 score. This research contributes
+is utilized [45], [46].                                                             to the field of ITS safety as a whole since the success of ITS
+                                                                                    operations is heavily dependent on the safe operation of all
+                              V. D ISCUSSION                                        its respective elements. In addition, CAV manufacturers and
+The main objective of this study is to improve safety of                            policy-makers may benefit from the observations in this study
+CAVs and robustness of their decisions in the presence of                           with regards to the value of having redundant information for
+faulty sensors or cyber attacks, which may pose significant                         a specific parameter such as the speed of a vehicle. As a result,
+risks to transportation network users. CAVs are expected                            more redundant sensors and information gathering devices
+to use a number of redundant sensors measuring the same                             may be implemented and considered in CAVs to increase their
+parameters, e.g. speed or location, which can be used to                            resiliency against anomalous sensor values. It is also expected
+detect and identify anomalous sensor values by comparing the                        that the CNN-KF framework presented in this study will be
+data collected from the corresponding sensors. In addition,                         applied to various other sources of information in CAVs to
+CAVs collect large volumes of data, often at 100ms or finer                         increase their safety.
+intervals, enabling the use of deep learning techniques to learn                       The study is subject to limitations. First, the anomalous
+complex, nonlinear patterns in the data to improve overall                          sensor values used in the experiments, consistent with previous
+detection/identification performance. We take advantage of                          studies in the literature, are simulated, mainly because this type
+these two important features of CAVs by combining a deep                            of data are not yet readily available. In addition, due to paucity
+learning technique, CNN, and a traditional anomaly detec-                           of data on connected vehicles, the experiments are limited
+tion technique, KF with a failure detector, to address the                          to on-board sensors. Although the framework is generic and
+real-time anomalous sensor value detection and identification                       can address anomaly detection/identification regardless of the
+for CAVs. Our approach improves upon both CNN and                                   data source, additional testing is needed as real data becomes
+KF models, when they are used separately, as it integrates their                    readily available. To that end, it should be noted that the
+strengths.                                                                          reported performance of the proposed CNN-based methods are
+   Note that the developed models are able to perform detec-                        only valid for those attack types whose effects can be reflected
+tion and identification, not prediction. That is, they do not                       by the four anomaly types considered in this study.
+have the capability to preventively detect anomalous sensor                            Furthermore, in this study, we assume the onset of anom-
+values. However, the models are expected to be used in an                           alous values in sensors, due to either attacks or faults, occur
+online fashion, on high-frequency data (with the sampling                           independently. Although we do not explicitly train models on
+frequency of approximately 100ms) to detect and identify                            datasets containing interdependent sensor failures or systemic
+anomalous sensor values. Therefore, if a sensor starts to                           cyber attacks on a vehicle’s sensors, the framework is expected
+transmit anomalous data, it can be identified and actions may                       to still be able to detect such faults/attacks. To improve
+be implemented within a fraction of a second to mitigate its                        model performance under such scenarios, however, additional
+effects.                                                                            training using such data is required. Indeed, it is envisioned
+   Introducing sliding windows in CNN and KF-CNN mod-                               that real-world data would be available in the near future as a
+els allows for evaluating sensor readings holistically and                          result of various ongoing pilot studies (Michigan, Wyoming,
+more than once, hence providing additional opportunities for                        New York City, and Tampa) as well as the introduction of
+detection and identification of anomalous sensor values. For                        CAVs into society by companies such as Waymo, Uber, Audi,
+instance, all models are at risk of missing bias and gradual                        and Tesla.
+drift anomaly types, particularly if the anomaly magnitudes                            In future work, it may be useful to distinguish between
+are small. However, in CNN and CNN-KF, even if the onset of                         anomalous and malicious information, since this will influence
+anomaly is initially missed, the anomaly is detected/identified                     the action taken to mitigate their effects. Also, it may be
+after only a few time epochs, e.g., approximately in 300ms.                         beneficial to also identify the type of anomaly occurring.
+                                                                                    This, in turn, will enable the development of certain real-time
+                                                                                    actions to minimize the impact of cyber attacks and/or faulty
+               VI. C ONCLUSION AND F UTURE W ORK                                    sensors, therefore contributing to the development of effective
+The goal of this study is to develop an approach to                                 counter-measures.
+detect/identify anomalous behaviors in CAVs to improve their
+safety. Our results show that the use of deep learning models                                                        A PPENDIX
+such as CNN to detect/identify anomalous sensor values in                              See Tables VIII and IX in the supplementary material.
+CAV systems in real-time is a viable path and it can improve
+                                                                                                                   R EFERENCES
+upon the well-established methods such as Kalman filtering
+with failure detectors. In addition, our results show that                           [1] B. Ran and D. Boyce, Dynamic Urban Transportation Network Mod-
+                                                                                         els: Theory and Implications for Intelligent Vehicle-Highway Systems.
+because of the inherent differences between CNN and KF,                                  New York, NY, USA: Springer, 2012.
+combining these approaches can build upon their individual                           [2] G. Meyer and S. Beiker, Road Vehicle Automation. Heidelberg, Ger-
+strengths and hence result in an improved performance. More                              many: Springer, 2014.
+                                                                                     [3] T. Litman, “Autonomous vehicle implementation predictions,” in Vic-
+specifically, we show that by using a CNN-empowered KF                                   toria Transport Policy Instute, vol. 28. Victoria, BC, Canada: Victoria
+on raw sensor data, it is possible to detect and identify                                Transport Policy Institute, 2014.
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+VAN WYK et al.: REAL-TIME SENSOR ANOMALY DETECTION AND IDENTIFICATION IN AUTOMATED VEHICLES                                                                    1275
+
+
+
+ [4] DoT, U.S. (2016). United States Department of Transportation.                  [27] M. J. Kang and J. W. Kang, “Intrusion detection system using deep
+     Connected Vehicles and Cyber Security. [Online]. Available:                         neural network for in-vehicle network security,” PloS ONE, vol. 11,
+     https://www.its.dot.gov/factsheets/pdf/cv_%20cybersecurity.pdf.                     no. 6, Jun. 2016, Art. no. e0155781.
+     Accessed 09-03-2017.
+ [5] A. Greenberg, “Hackers remotely kill a jeep on the highway – With me           [28] A. Bezemskij, G. Loukas, D. Gan, and R. Anthony, “Detecting cyber-
+     in it,” Wired, vol. 7, p. 21, May 2015.                                             physical threats in an autonomous robotic vehicle using Bayesian net-
+ [6] K. Koscher et al., “Experimental security analysis of a modern automo-              works,” in Proc. IEEE Int. Conf. Internet Things, Jun. 2017, pp. 45–56.
+     bile,” in Proc. IEEE Symp. Secur. Privacy, May 2010, pp. 447–462.              [29] G. H. B. Foo, X. Zhang, and D. M. Vilathgamuwa, “A sensor fault
+ [7] A. Weimerskirch and R. Gaynier, “An overview of automotive cyber-                   detection and isolation method in interior permanent-magnet synchro-
+     security: Challenges and solution approaches,” in Proc. TrustED CCS,                nous motor drives based on an extended Kalman filter,” IEEE Trans.
+     Oct. 2015, p. 53.                                                                   Ind. Electron., vol. 60, no. 8, pp. 3485–3495, Aug. 2013.
+                                                                                    [30] X. Wei, M. Verhaegen, and T. van Engelen, “Sensor fault detection and
+ [8] F. Bai, D. D. Stancil, and H. Krishnan, “Toward understanding char-                 isolation for wind turbines based on subspace identification and Kalman
+     acteristics of dedicated short range communications (DSRC) from a                   filter techniques,” Int. J. Adapt. Control Signal Process., vol. 24, no. 8,
+     perspective of vehicular network engineers,” in Proc. 16th Annu. Int.               pp. 687–707, Dec. 2010.
+     Conf. Mobile Comput. Netw., Sep. 2010, pp. 329–340.                            [31] M. Muter and N. Asaj, “Entropy-based anomaly detection for in-
+ [9] S. Checkoway et al., “Comprehensive experimental analyses of auto-                  vehicle networks,” in Proc. IEEE Intell. Vehicles Symp. (IV), Jun. 2011,
+     motive attack surfaces,” in Proc. USENIX Secur. Symp., Aug. 2011,                   pp. 1110–1115.
+     pp. 21–35.                                                                     [32] NHTSA. (2013). Preliminary Statement of Policy Concerning Automated
+[10] M. Field. (2017). The Telegraph, Graffiti on Stop Signs Could Trick                 Vehicles, National Highway Traffic Safety Administration. [Online].
+     Driverless Cars Into Driving Dangerously. [Online]. Available:                      Available: https://www.nhtsa.gov
+     http://www.telegraph.co.uk/technology/2017/08/07/graffiti-road-signs-          [33] J. Schmidhuber, “Deep learning in neural networks: An overview,”
+     could-trick-driverless-cars-driving-dangerously                                     Neural Netw., vol. 61, pp. 85–117, Jan. 2015.
+[11] M. Darms, P. Rybski, and C. Urmson, “Classification and tracking               [34] D. Bezzina and J. Sayer, “Safety pilot model deployment: Test con-
+     of dynamic objects with multiple sensors for autonomous driving in                  ductor team report,” U.S. Dept. Transp., Washington, DC, USA,
+     urban environments,” in Proc. IEEE Intell. Vehicles Symp., Jun. 2008,               Tech. Rep. DOT HS 812, May 2014.
+                                                                                    [35] D. P. Kingma and B. Jao, “Adam: A method for stochastic optimization,”
+     pp. 1197–1202.
+                                                                                         in Proc. 3rd Int. Conf. Learn. Representations (ICLR), San Diego, CA,
+[12] J. Z. Varghese and R. G. Boone, “Overview of autonomous vehicle                     USA, May 2014, pp. 1–9.
+     sensors and systems,” in Proc. Int. Conf. Oper. Excellence Service Eng.,       [36] A. Krizhevsky, I. Sutskever, and G. E. Hinton, “Imagenet classification
+     Sep. 2015, pp. 85–98.                                                               with deep convolutional neural networks,” in Proc. Adv. Neural Inf.
+[13] B. Khaleghi, A. Khamis, F. O. Karray, and S. N. Razavi, “Multisensor                Process. Syst., 2012, pp. 1097–1105.
+     data fusion: A review of the state-of-the-art,” Inf. Fusion, vol. 14, no. 1,   [37] N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and
+     pp. 28–44, 2013.                                                                    R. Salakhutdinov, “Dropout: A simple way to prevent neural networks
+[14] R. E. Kalman, “A new approach to linear filtering and prediction                    from overfitting,” J. Mach. Learn. Res., vol. 15, no. 1, pp. 1929–1958,
+     problems,” Trans. ASME, D, J. Basic Eng., vol. 82, pp. 35–45, 1960.                 2014.
+[15] M. Jo, J. Park, Y. Baek, R. Ivanov, J. Weimer, S. H. Son, and I. Lee,          [38] M. H. Bhuyan, D. K. Bhattacharyya, and J. K. Kalita, “Network anomaly
+     “Adaptive transient fault model for sensor attack detection,” in Proc.              detection: methods, systems and tools,” IEEE Commun. Surv. Tuts.,
+     4th Int. Conf. Cyber-Phys. Syst., Netw., Appl. (CPSNA), Jun. 2016,                  vol. 16, no. 1, pp. 303–336, Jan. 2014.
+     pp. 59–65.                                                                     [39] Brown, R Grover, “GPS RAIM: Calculation of thresholds and protection
+                                                                                         radius using chi-square methods; A geometric approach,” Inst. Navigat.,
+[16] J. Petit and S. E. Shladover, “Potential cyberattacks on automated
+                                                                                         Manassas, VA, USA, Tech. Rep., 1994.
+     vehicles,” IEEE Trans. Intell. Transp. Syst., vol. 16, no. 2, pp. 546–556,     [40] NXP Semiconductor F, MMA8451Q 3-Axis, 14-bit/8-bit Digital
+     Apr. 2015.                                                                          Accelerometer, Data Sheet, document MMA8453Q, 2014.
+[17] C. Yan, X. Wenyuan, and J. Liu, Can you Trust Autonomous Vehicles:             [41] Y. Mo, “False data injection attacks against state estimation in wireless
+     Contactless Attacks Against Sensors of Self-Driving Vehicle? Las Vegas,             sensor networks,” in Proc. 49th IEEE Conf. Decis. Control (CDC),
+     NI, USA: DEF CON, 2016.                                                             Dec. 2010, pp. 56–65.
+[18] T. Hoppe, S. Kiltz, and J. Dittmann, “Security threats to automotive           [42] A. H. Mohamed and K. P. Schwarz, “Adaptive Kalman filtering for
+     CAN networks—Practical examples and selected short-term counter-                    INS/GPS,” J. Geodesy, vol. 73, no. 4, pp. 193–203, 1999.
+     measures,” Comput. Safety, Rel., Secur., vol. 96, no. 1, pp. 235–248,          [43] A. B. Sharma, L. Golubchik, and R. Govindan, “Sensor faults: Detection
+     Jan. 2008.                                                                          methods and prevalence in real-world datasets,” ACM Trans. Sensor
+[19] K. N. Truong, S. N. Patel, J. W. Summet, and G. D. Abowd, “Preventing               Netw., vol. 6, no. 3, p. 23, Jun. 2010.
+     camera recording by designing a capture-resistant environment,” in             [44] D. Loebis, R. Sutton, J. Chudley, and W. Naeem, “Adaptive tuning of a
+     Proc.7th Int. Conf. Ubi. Comput., 2005, pp. 73–86.                                  Kalman filter via fuzzy logic for an intelligent AUV navigation system,”
+                                                                                         Control Eng. Pract., vol. 12, no. 12, pp. 1531–1539, Dec. 2004.
+[20] S. Yang, Z. Liu, J. Li, S. Wang, and F. Yang, “Anomaly detection               [45] N. V. Chawla, N. Japkowicz, and A. Kotcz, “Special issue on learning
+     for Internet of vehicles: A trust management scheme with affinity                   from imbalanced data sets,” ACM Sigkdd Explor. Newslett., vol. 6, no. 1,
+     propagation,” Mobile Inf. Syst., vol. 2016, Mar. 2016, Art. no. 5254141.            pp. 1–6, Jun. 2004.
+[21] Lin, R., Khalastchi, E. and G. A. Kaminka, “Detecting anomalies in             [46] S. H. Park, S. M. Kim, and Y. G. Ha, “Highway traffic accident
+     unmanned vehicles using the mahalanobis distance,” in Proc. IEEE Int.               prediction using VDS big data analysi,” J. Supercomput., vol. 72, no. 7,
+     Conf. Robot. Automat., May 2010, pp. 3038–3044.                                     pp. 2815–2831, 2016.
+[22] M. Realpe, B. Vintimilla, and L. Vlacic, “Sensor fault detection and           [47] M. Marchetti, D. Stabili, A. Guido, and C. Michele, “Evaluation of
+     diagnosis for autonomous vehicles,” in Proc. MATEC Web Conf., vol. 30,              anomaly detection for in-vehicle networks through information-theoretic
+     Sep. 2015, p. 4003.                                                                 algorithms,” in Proc. IEEE 2nd Int. Forum Res. Technol. Soc. Ind.
+[23] N. Pous, D. Gingras, and D. Gruyer, “Intelligent vehicle embedded                   Leveraging Better (RTSI), Sep. 2016, pp. 1–6.
+     sensors fault detection and isolation using analytical redundancy and          [48] A. Taylor, S. Leblanc, and J. Nathalie, “Anomaly detection in automobile
+     nonlinear transformations,” J. Control Sci. Eng., vol. 2017, Jan. 2017,             control network data with long short-term memory networks,” in Proc.
+     Art. no. 176934.                                                                    IEEE Int. Conf. Data Sci. Adv. Anal. (DSAA), Oct. 2016, pp. 130–139.
+                                                                                    [49] M. Levi, Y. Allouche, and A. Kontorovich, “Advanced analytics for
+[24] E. Khalastchi, G. A. Kaminka, M. Kalech, and R. Lin, “Online anomaly
+                                                                                         connected car cybersecurity,” in Proc. IEEE 87th Veh. Technol. Conf.,
+     detection in unmanned vehicles,” in Proc. 10th Int. Conf. Auton. Agents
+                                                                                         Jun. 2018, pp. 1–7.
+     Multiagent Syst., vol. 1, Sep. 2011, pp. 115–122.
+                                                                                    [50] T. Trippel, O. Weisse, W. Xu, P. Honeyman, and K. Fu, “WALNUT:
+[25] J. Park, R. Ivanov, J. Weimer, M. Pajic, and I. Lee, “Sensor attack                 Waging doubt on the integrity of MEMS accelerometers with acoustic
+     detection in the presence of transient faults,” in Proc. ACM/IEEE 6th               injection attacks,” in Proc. IEEE Eur. Symp. Secur. Privacy (EuroSP),
+     Int. Conf. Cyber-Phys. Syst., Apr. 2015, pp. 1–10.                                  Apr. 2017, pp. 3–18.
+[26] P. Christiansen, L. N. Nielsen, K. A. Steen, R. N. Jørgensen, and              [51] R. Currie, Developments in Car Hacking. Bethesda, MD, USA: SANS
+     H. Karstoft, “DeepAnomaly: Combining background subtraction and                     Inst., 2015.
+     deep learning for detecting obstacles and anomalies in an agricultural         [52] N. Huq and R. M. Vosseler, “Cyberattacks against intelligent transporta-
+     field,” Sensors, vol. 16, no. 11, p. 1904, 2016.                                    tion systems,” Trend Micro, Irving, TX, USA, Tech. Rep., 2017.
+
+     Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+1276                                                         IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 21, NO. 3, MARCH 2020
+
+
+
+[53] C. William. 2017. Hackers Hit D.C. Police Closed-Circuit                                                 Anahita Khojandi (M’18) received the Ph.D.
+     Camera Network, City Officials Disclose. [Online]. Available:                                            degree in industrial engineering from the University
+     https://www.washingtonpost.com/local/public-safety/hackers-hit-                                          of Pittsburgh. She is currently an Assistant Professor
+     dcpolice- closed-circuit-camera-network-city-officials-disclose                                          with the Department of Industrial and Systems Engi-
+[54] P. Malhotra, L. Vig, G. Shroff, and P. Agarwal, “Long short term                                         neering, The University of Tennessee, Knoxville.
+     memory networks for anomaly detection in time series,” in Proc. Presses                                  Her research interests include decision-making under
+     Universitaires De Louvain., Apr. 2015. p. 85.                                                            uncertainty, data mining, and machine learning with
+                                                                                                              applications in a wide array of complex systems. She
+                           Franco van Wyk (M’18) received the M.Eng.                                          is a member of INFORMS, IISE, and the Society for
+                           degree in Engineering Management from Stellen-                                     Medical Decision Making.
+                           bosch University, South Africa. He is currently
+                           pursuing the Ph.D. degree with the Department of
+                           Industrial and Systems Engineering, The Univer-
+                           sity of Tennessee, Knoxville. His research interests
+                           include optimal sequential decision-making under
+                           uncertainty and safety in connected and automated
+                           vehicle systems. He is a member of IISE.
+
+
+                           Yiyang Wang received the B.S. degree in telecom-
+                           munications engineering from Jilin University,                                     Neda Masoud received the B.S. degree in industrial
+                           China. He is currently pursuing the M.S. degree                                    engineering, the M.S. degree in physics, and the
+                           with the Electrical Engineering and Computer Sci-                                  Ph.D. degree in civil and environmental engineering
+                           ence Department, University of Michigan at Ann                                     from the University of California at Irvine. She is
+                           Arbor. He is also a Research Assistant with the                                    currently an Assistant Professor with the Department
+                           Next Generation Mobility Systems Lab, Department                                   of Civil and Environmental Engineering, University
+                           of Civil and Environmental Engineering, University                                 of Michigan at Ann Arbor. Her research interests
+                           of Michigan at Ann Arbor. His research interests                                   include large-scale optimization and machine learn-
+                           include statistical machine learning, stochastic                                   ing with applications in shared-use mobility services
+                           processes, and cybersecurity in connected and                                      and connected and automated vehicle systems. She
+                           autonomous vehicle technologies.                                                   is a member of INFORMS and TRB.
+
+
+
+
+       Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on October 31,2025 at 09:23:36 UTC from IEEE Xplore. Restrictions apply.
+
