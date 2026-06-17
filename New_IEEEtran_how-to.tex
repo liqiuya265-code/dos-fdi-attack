@@ -18,6 +18,7 @@
 \newtheorem{assumption}{Assumption}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
 \newtheorem{remark}{Remark}
 
 \newcommand{\sgn}{\operatorname{sgn}}
@@ -38,7 +39,7 @@
 \maketitle
 
 \begin{abstract}
-This draft presents a unified treatment for denial-of-service (DoS) and false-data injection (FDI) attacks in networked cooperative guidance of multiple flight vehicles. DoS attacks remove communication links and make neighbor information unavailable, whereas FDI attacks keep the communication channel active but corrupt the transmitted guidance variables. To handle the two attack modes within a single framework, a trusted-neighbor information reconstruction mechanism is proposed. The mechanism first detects link availability, then evaluates data credibility through a multi-evidence trust mechanism that combines physical feasibility, group-consistency clustering, and windowed distribution divergence, and finally reconstructs the effective neighbor information by switching among the received data, a virtual-leader reference, and a conservative zero-bias fallback. Based on the reconstructed information, a resilient cooperative guidance error is defined for time-to-go synchronization. A finite-time convergence condition is further formulated in terms of the weighted trusted effective communication time. The result clarifies that convergence before interception can be guaranteed only when the accumulated trusted connectivity before impact is sufficiently large and the effective guidance gain does not degenerate.
+This draft presents a unified treatment for denial-of-service (DoS) and false-data injection (FDI) attacks in networked cooperative guidance of multiple flight vehicles. DoS attacks remove communication links and make neighbor information unavailable, whereas FDI attacks keep the communication channel active but corrupt the transmitted guidance variables. To handle the two attack modes within a single framework, a trusted-graph isolation mechanism is proposed. The mechanism first detects link availability, then evaluates data credibility through a multi-evidence trust mechanism that combines physical feasibility, group-consistency clustering, and windowed distribution divergence. Once a link is judged to be corrupted by FDI, it is removed from the cooperative guidance graph rather than softly blended with a substitute value. A resilient impact-time synchronization error is then defined on the remaining trusted graph. Exponential and fixed-time convergence conditions are derived in terms of accumulated trusted connectivity after DoS blocking and FDI isolation.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -50,9 +51,9 @@ Cooperative guidance, denial-of-service attack, false-data injection attack, res
 
 A direct zero-bias strategy can be used during DoS intervals. Under such a strategy, the cooperative terms associated with disconnected links are removed, and the guidance law degenerates to a local or proportional-navigation-like behavior. This approach is conservative and useful for stability preservation, but it suspends part of the cooperation and may introduce discontinuities in the command. Conversely, a single-predictor residual detector may attenuate simple FDI signals but can be unreliable in cooperative guidance because target maneuvers, modeling errors, field-of-view constraints, and intermittent DoS intervals can all enlarge the prediction residual.
 
-This draft therefore proposes a unified trusted-information reconstruction framework. The central idea is to process the received neighbor information before it enters the cooperative guidance law. DoS is handled through link-availability indicators and virtual-leader substitution; FDI is handled through multi-evidence trust evaluation; and a sign-consistency safety switch is introduced to prevent the virtual-leader term from injecting positive energy into the cooperative error dynamics.
+This draft therefore proposes a unified trusted-graph framework. The central idea is to decide which neighbor information is allowed to enter the cooperative guidance law. DoS is handled through link-availability indicators, and detected FDI is handled by removing the corrupted link from the cooperative graph. A zero-bias fallback is used when the remaining trusted graph is not connected, so unavailable or corrupted links cannot inject positive energy into the impact-time disagreement dynamics.
 
-The one-sentence argument of this draft is as follows: in cooperative guidance under hybrid DoS and FDI attacks, the impact-time synchronization error can be driven to zero before interception by reconstructing trusted effective neighbor information and by requiring a sufficient amount of weighted trusted communication time before impact.
+The one-sentence argument of this draft is as follows: in cooperative guidance under hybrid DoS and FDI attacks, the impact-time synchronization error can be driven to zero before interception by isolating unavailable or corrupted links and by requiring sufficient accumulated trusted connectivity before impact.
 
 \section{Cooperative Guidance Variable}
 
@@ -269,98 +270,103 @@ To avoid abrupt command changes caused by sudden trust switching, the implemente
     \quad a_{\rho}>0.
     \label{eq:trust_filter}
 \end{equation}
-The resulting $\rho_{ij}(t)$ is a continuous credibility weight. A value close to one means that the received information is physically feasible, group-consistent, and distributionally normal. A value close to zero means that the link is likely corrupted by FDI and should be replaced by the virtual-leader information in the reconstruction layer.
+The resulting $\rho_{ij}(t)$ is a continuous credibility weight. A value close to one means that the received information is physically feasible, group-consistent, and distributionally normal. A value close to zero means that the link is likely corrupted by FDI. In the control layer, this continuous score is converted into the binary isolation variable $\sigma_{ij}(t)$ used in \eqref{eq:fdi_isolation}.
 
 \begin{remark}
-During a DoS interval, no new neighbor data are available. Therefore, FDI evidence is frozen or propagated from the last trusted value, and the link is handled by virtual-leader substitution. This separation avoids confusing missing data with corrupted data.
+During a DoS interval, no new neighbor data are available. Therefore, FDI evidence is frozen or propagated from the last trusted value, and the corresponding link is removed from the trusted graph through $\gamma_{ij}=0$. This separation avoids confusing missing data with corrupted data.
 \end{remark}
 
-\section{DoS Treatment: Virtual Leader and Zero-Bias Fallback}
+\section{DoS Treatment: Link Removal and Zero-Bias Fallback}
 
-DoS attacks make neighbor information unavailable. If the cooperative term of every disconnected link is directly set to zero, the error energy can be prevented from increasing, but cooperation is partially suspended. To reduce this conservatism, a virtual-leader variable $t_{go,v,ij}(t)$ is introduced as the substitute reference for the unavailable neighbor $j$ as seen by vehicle $i$.
+DoS attacks make neighbor information unavailable. In the proposed trusted-graph formulation, a DoS-blocked link is removed from the cooperative graph by setting $\gamma_{ij}(t)=0$. The corresponding adjacency entry $a_{ij}^r(t)$ is then zero, so the unavailable datum cannot enter the cooperative guidance command.
 
-When link $(j,i)$ becomes unavailable at $t=t_d$, the virtual leader is initialized by the last trusted value:
+This link-removal rule is conservative but important for stability. If no trusted neighbor is available for vehicle $i$, the cooperative term is set to zero and the vehicle follows the baseline guidance command. In impact-time coordinates, this means that no unverified neighbor reference is injected into the disagreement dynamics during the DoS interval.
+
+For implementation smoothing, a virtual-leader reference $t_{go,v,ij}(t)$ may still be propagated from the last trusted value:
 \begin{equation}
-    t_{go,v,ij}(t_d)=y_{ij}(t_d^-).
-    \label{eq:virtual_init}
-\end{equation}
-For short DoS intervals, a conservative holding-type virtual leader can be used:
-\begin{equation}
+    t_{go,v,ij}(t_d)=y_{ij}(t_d^-),\qquad
     \dot t_{go,v,ij}(t)=-1.
     \label{eq:virtual_hold}
 \end{equation}
-If a desired impact time $T_d$ is available, a target-oriented virtual leader can be designed as
-\begin{equation}
-    \dot t_{go,v,ij}(t)
-    =
-    -k_v\left[t_{go,v,ij}(t)-t_{go,d}(t)\right],
-    \quad
-    t_{go,d}(t)=T_d-t,
-    \label{eq:virtual_target}
-\end{equation}
-where $k_v>0$.
+However, this reference is allowed to affect the cooperative command only if it satisfies a nonexpansive safety condition. Otherwise, the disconnected edge remains removed. The zero-bias fallback is therefore the default stability-preserving action under DoS.
 
-The virtual leader should be used only when it helps reduce the cooperative error. A sign-consistency safety switch is therefore introduced:
-\begin{equation}
-    e_i(t)\left[t_{go,i}(t)-t_{go,v,ij}(t)\right]\ge 0.
-    \label{eq:sign_condition}
-\end{equation}
-If \eqref{eq:sign_condition} holds, the virtual-leader compensation is regarded as safe. Otherwise, the corresponding disconnected cooperative term is set to zero. This fallback recovers the conservative zero-bias strategy.
+\section{Trusted Graph Construction by Link Isolation}
 
-\section{Trusted Neighbor Information Reconstruction}
-
-The effective neighbor information is reconstructed as
+The detection layer is used only to decide whether a received datum is allowed to enter the cooperative guidance law. Once an FDI attack is detected on link $(j,i)$, the link is removed from the cooperative graph instead of being softly blended with a substitute value. Define the binary isolation variable
 \begin{equation}
-    t_{go,ij}^{\mathrm{eff}}(t)
-    =
-    \gamma_{ij}(t)\rho_{ij}(t)y_{ij}(t)
-    +
-    \left[1-\gamma_{ij}(t)\rho_{ij}(t)\right]
-    t_{go,v,ij}(t).
-    \label{eq:effective_info}
-\end{equation}
-Equation \eqref{eq:effective_info} unifies the treatment of normal communication, FDI, and DoS:
-\begin{itemize}
-    \item if $\gamma_{ij}=1$ and $\rho_{ij}\approx 1$, then $t_{go,ij}^{\mathrm{eff}}\approx y_{ij}$;
-    \item if $\gamma_{ij}=1$ and $\rho_{ij}\approx 0$, then the suspicious FDI-corrupted data are suppressed and $t_{go,ij}^{\mathrm{eff}}\approx t_{go,v,ij}$;
-    \item if $\gamma_{ij}=0$, then $t_{go,ij}^{\mathrm{eff}}=t_{go,v,ij}$.
-\end{itemize}
-
-To include the safety switch, define
-\begin{equation}
-    \eta_{ij}(t)=
+    \sigma_{ij}(t)=
     \begin{cases}
-        1, & \gamma_{ij}(t)\rho_{ij}(t)>0
-        \text{ or \eqref{eq:sign_condition} holds},\\
-        0, & \text{otherwise}.
+        1, & \text{link }(j,i)\text{ is judged trustworthy},\\
+        0, & \text{FDI is detected on link }(j,i).
     \end{cases}
-    \label{eq:safety_switch}
+    \label{eq:fdi_isolation}
 \end{equation}
-The resilient cooperative error is then
+The trusted adjacency entry is
+\begin{equation}
+    a_{ij}^{r}(t)
+    =
+    a_{ij}\gamma_{ij}(t)\sigma_{ij}(t),
+    \label{eq:trusted_adjacency}
+\end{equation}
+and the resulting trusted graph is denoted by $\mathcal{G}_r(t)=(\mathcal{V},\mathcal{E}_r(t))$. Thus, DoS and detected FDI have the same effect at the control layer: the corresponding edge is excluded. If several outgoing links of the same sender are detected as corrupted, a conservative node-isolation rule may also be used:
+\begin{equation}
+    a_{ij}^{r}(t)
+    =
+    a_{ij}\gamma_{ij}(t)\sigma_i(t)\sigma_j(t),
+    \label{eq:node_isolation}
+\end{equation}
+where $\sigma_j(t)=0$ removes node $j$ from the cooperative graph. The main analysis below is stated for link isolation; node isolation follows by applying the same proof to the remaining normal-node subgraph.
+
+Let
+\begin{equation}
+    T_i(t)=t+t_{go,i}(t)
+    \label{eq:impact_time}
+\end{equation}
+be the predicted impact time of vehicle $i$. The resilient synchronization error is defined on the trusted graph as
 \begin{equation}
     e_i^{r}(t)
     =
     \sum_{j\in\mathcal{N}_i}
-    a_{ij}(t)\eta_{ij}(t)
-    \left[t_{go,i}(t)-t_{go,ij}^{\mathrm{eff}}(t)\right].
+    a_{ij}^{r}(t)
+    \left[T_i(t)-T_j(t)\right].
     \label{eq:resilient_error}
 \end{equation}
+Equivalently, with $T=[T_1,\ldots,T_N]^\top$,
+\begin{equation}
+    e^{r}(t)=L_r(t)T(t),
+    \label{eq:trusted_laplacian_error}
+\end{equation}
+where $L_r(t)$ is the Laplacian matrix of $\mathcal{G}_r(t)$. In this form, corrupted data do not appear in the guidance law after detection.
+
+\begin{remark}
+The virtual-leader variable can still be used for trajectory smoothing or for local fallback during long DoS intervals, but it is not required for excluding FDI data from the stability proof. The rigorous convergence statement below relies on edge removal and trusted-graph connectivity rather than on a soft reconstruction of corrupted neighbor information.
+\end{remark}
 
 \section{Resilient Cooperative Guidance Law}
 
-Following fixed-time time-to-go synchronization designs, the cooperative guidance term can be constructed by replacing the nominal error in \eqref{eq:nominal_error} with the resilient error in \eqref{eq:resilient_error}. A representative cooperative term is
+The cooperative guidance objective is to regulate the predicted impact times $T_i$. At the abstract synchronization level, the trusted-graph feedback can be written as
 \begin{equation}
-    u_i^{\mathrm{coop}}
+    \dot T
     =
-    -\frac{k_i(t)}{t_{go,i}(t)}
-    \left(
-    \alpha |e_i^{r}|^{p}\sgn(e_i^{r})
-    +
-    \beta |e_i^{r}|^{q}\sgn(e_i^{r})
-    \right),
-    \label{eq:coop_law}
+    -k L_r(t)T,
+    \quad k>0,
+    \label{eq:linear_sync}
 \end{equation}
-where $\alpha,\beta>0$, $0<p<1$, $q>1$, and $k_i(t)>0$ denotes the effective geometric guidance gain. The total guidance command can be expressed as
+for an exponentially convergent design. A fixed-time alternative is
+\begin{equation}
+    \dot T_i
+    =
+    -k_1
+    \sum_{j\in\mathcal{N}_i}
+    a_{ij}^{r}
+    \operatorname{sig}^{\alpha}(T_i-T_j)
+    -k_2
+    \sum_{j\in\mathcal{N}_i}
+    a_{ij}^{r}
+    \operatorname{sig}^{\beta}(T_i-T_j),
+    \label{eq:fixed_time_sync}
+\end{equation}
+where $k_1,k_2>0$, $0<\alpha<1$, $\beta>1$, and $\operatorname{sig}^{\mu}(x)=|x|^\mu\operatorname{sgn}(x)$. The actual normal-acceleration command is then selected to realize the desired change of $T_i$ through the guidance geometry:
 \begin{equation}
     \bm a_i
     =
@@ -369,132 +375,150 @@ where $\alpha,\beta>0$, $0<p<1$, $q>1$, and $k_i(t)>0$ denotes the effective geo
     \bm a_i^{\mathrm{coop}},
     \label{eq:guidance_command}
 \end{equation}
-where $\bm a_i^{\mathrm{PNG}}$ is the baseline proportional navigation term and $\bm a_i^{\mathrm{coop}}$ is induced by \eqref{eq:coop_law}.
+where $\bm a_i^{\mathrm{PNG}}$ is the baseline interception term and $\bm a_i^{\mathrm{coop}}$ implements either \eqref{eq:linear_sync} or \eqref{eq:fixed_time_sync} through the local relation between normal acceleration and $\dot T_i$.
 
-\section{Finite-Time Convergence Under Hybrid Attacks}
-
-The convergence analysis separates the time axis into trusted-connected intervals and unsafe or disconnected intervals. During trusted-connected intervals, the effective graph is connected and the cooperative error decreases. During unsafe or disconnected intervals, the virtual-leader and zero-bias fallback mechanisms guarantee nonincrease of the error energy.
-
-\begin{assumption}[Trusted effective connectivity]
-Let $\mathcal{G}_r(t)$ denote the trusted effective graph induced by links that pass the trust and safety conditions. Define
-\begin{equation}
-    \delta_r(t)=
-    \begin{cases}
-        1, & \lambda_2(\mathcal{L}_r(t))>0,\\
-        0, & \lambda_2(\mathcal{L}_r(t))=0,
-    \end{cases}
-    \label{eq:trusted_delta}
-\end{equation}
-where $\mathcal{L}_r(t)$ is the Laplacian matrix of $\mathcal{G}_r(t)$.
+\begin{assumption}[Impact-time control channel]
+For each non-isolated normal vehicle, the cooperative acceleration can realize the desired $\dot T_i$ with a bounded gain error. In the nominal proof this relation is exact; under modeling uncertainty it is exact up to a bounded disturbance $d_i(t)$ with $|d_i(t)|\le \bar d$.
 \end{assumption}
 
-\begin{assumption}[Nondegenerate effective gain]
-There exists a constant $c_{\sigma}>0$ such that
+\section{Convergence Under DoS and Detected FDI}
+
+The convergence analysis is now a switching-graph problem. DoS removes unavailable links through $\gamma_{ij}=0$, and detected FDI removes corrupted links through $\sigma_{ij}=0$. Hence, the only graph that enters the controller is $\mathcal{G}_r(t)$.
+
+\begin{assumption}[Trusted connectivity after isolation]
+There exists a constant $\underline{\lambda}>0$ such that, during trusted connected intervals,
 \begin{equation}
-    k_i(t)\ge c_{\sigma},\quad i=1,\ldots,N.
-    \label{eq:gain_lower_bound}
+    \lambda_2(L_r(t))\ge \underline{\lambda}.
+    \label{eq:lambda_lower}
 \end{equation}
-This condition excludes the case where field-of-view auxiliary functions or singularity-avoidance functions make the cooperative gain vanish.
+When $\mathcal{G}_r(t)$ is disconnected, $\lambda_2(L_r(t))$ is set to zero in the convergence bound.
 \end{assumption}
 
-\begin{assumption}[Nonincrease during unsafe intervals]
-When $\delta_r(t)=0$, the virtual-leader safety switch and zero-bias fallback guarantee
-\begin{equation}
-    \dot V(t)\le 0.
-    \label{eq:nonincrease}
-\end{equation}
+\begin{assumption}[Nonexpansive fallback]
+When the trusted graph is disconnected because of DoS or FDI isolation, the cooperative term is either computed on the remaining trusted connected components or set to zero on unsafe links. This fallback does not increase the impact-time disagreement energy.
 \end{assumption}
 
-Define the cooperative error energy as
+Define the projection matrix
 \begin{equation}
-    V(t)=\frac{1}{2}\sum_{i=1}^{N}\left(e_i^{r}(t)\right)^2.
+    M=I-\frac{1}{N}\mathbf{1}\mathbf{1}^{\top}
+\end{equation}
+and the disagreement vector
+\begin{equation}
+    \tilde T=MT.
+\end{equation}
+The Lyapunov function is
+\begin{equation}
+    V(t)=\frac{1}{2}\tilde T^{\top}(t)\tilde T(t).
     \label{eq:lyapunov}
 \end{equation}
-Under the resilient guidance law, the following inequality is expected over the whole time axis:
+
+\begin{theorem}[Exponential convergence under trusted connectivity]
+Consider the trusted-graph control law \eqref{eq:linear_sync}. Suppose that detected FDI links and DoS-blocked links are excluded according to \eqref{eq:trusted_adjacency}. Then the disagreement energy satisfies
 \begin{equation}
-    \dot V(t)
+    V(t)
     \le
-    -\frac{\delta_r(t)}{\bar t_{go}(t)}
+    V(0)
+    \exp
     \left[
-    c_1 V^{\frac{1+p}{2}}(t)
-    +
-    c_2 V^{\frac{1+q}{2}}(t)
-    \right],
-    \label{eq:vdot}
+    -2k
+    \int_0^t
+    \lambda_2(L_r(s))\,ds
+    \right].
+    \label{eq:exp_bound}
 \end{equation}
-where $c_1,c_2>0$ and
+Consequently, if
 \begin{equation}
-    \bar t_{go}(t)=\max_{i\in\mathcal{V}} t_{go,i}(t).
+    \int_0^\infty \lambda_2(L_r(s))\,ds=\infty,
+    \label{eq:cumulative_connectivity}
 \end{equation}
-
-Define the weighted trusted effective communication time as
+then $T_i(t)-T_j(t)\to0$ for all normal vehicles. For a prescribed terminal time $t_f$, the sufficient condition
 \begin{equation}
-    S_r(t)
-    =
-    \int_{t_0}^{t}
-    \frac{\delta_r(\tau)}{\bar t_{go}(\tau)}
-    d\tau .
-    \label{eq:weighted_time}
-\end{equation}
-
-\begin{theorem}[Finite-time convergence under hybrid attacks]
-Suppose Assumptions 1--3 hold. If there exists $T_c<t_f$ such that
-\begin{equation}
-    S_r(T_c)
+    \int_0^{t_f}
+    \lambda_2(L_r(s))\,ds
     \ge
-    \frac{2}{c_1(1-p)}
-    +
-    \frac{2}{c_2(q-1)},
-    \label{eq:ft_condition}
+    \frac{1}{2k}\ln\frac{V(0)}{\varepsilon}
+    \label{eq:finite_error_condition}
 \end{equation}
-then $V(T_c)=0$. Thus, the time-to-go synchronization error converges to zero before interception.
+guarantees $V(t_f)\le\varepsilon$.
 \end{theorem}
 
 \begin{proof}
-When $V>0$, define $z=\sqrt{V}$. From \eqref{eq:vdot},
+Because $L_r(t)\mathbf{1}=0$, one has $ML_r(t)=L_r(t)M=L_r(t)$ for an undirected trusted graph. During trusted intervals governed by \eqref{eq:linear_sync},
 \begin{equation}
-    \dot z(t)
+    \dot{\tilde T}
+    =
+    M\dot T
+    =
+    -kML_rT
+    =
+    -kL_r\tilde T .
+\end{equation}
+Therefore,
+\begin{equation}
+    \dot V
+    =
+    \tilde T^\top\dot{\tilde T}
+    =
+    -k\tilde T^\top L_r\tilde T .
+\end{equation}
+For a connected trusted graph,
+\begin{equation}
+    \tilde T^\top L_r\tilde T
+    \ge
+    \lambda_2(L_r)\|\tilde T\|^2
+    =
+    2\lambda_2(L_r)V.
+\end{equation}
+Hence,
+\begin{equation}
+    \dot V
     \le
-    -\frac{\delta_r(t)}{2\bar t_{go}(t)}
-    \left[
-    c_1 z^p(t)+c_2 z^q(t)
-    \right].
+    -2k\lambda_2(L_r)V.
 \end{equation}
-Using $S_r$ as the new time variable yields
-\begin{equation}
-    \frac{dz}{dS_r}
-    \le
-    -\frac{1}{2}
-    \left(c_1 z^p+c_2 z^q\right).
-\end{equation}
-The settling value of $S_r$ is upper bounded by
-\begin{equation}
-    \frac{2}{c_1(1-p)}+\frac{2}{c_2(q-1)}.
-\end{equation}
-Therefore, \eqref{eq:ft_condition} implies $z(T_c)=0$, and hence $V(T_c)=0$.
+During disconnected or unsafe intervals, the nonexpansive fallback gives $\dot V\le0$, which is the same inequality with $\lambda_2(L_r)=0$. Thus the inequality holds for all time. Applying the comparison lemma gives \eqref{eq:exp_bound}. Conditions \eqref{eq:cumulative_connectivity} and \eqref{eq:finite_error_condition} follow directly from \eqref{eq:exp_bound}.
 \end{proof}
 
-\begin{remark}
-The ordinary accumulated communication time
+\begin{corollary}[Fixed-time convergence with accumulated trusted time]
+Under \eqref{eq:fixed_time_sync}, suppose that the trusted connected graph satisfies \eqref{eq:lambda_lower} during connected intervals and that the fallback is nonexpansive otherwise. If there exist constants $c_1,c_2>0$ such that
 \begin{equation}
-    s_r(t)=\int_{t_0}^{t}\delta_r(\tau)d\tau
-\end{equation}
-is useful but insufficient for a tight proof because the fixed-time guidance structure depends on $1/t_{go}$. If $\bar t_{go}(t)\le \bar T_{go}$, then
-\begin{equation}
-    S_r(t)\ge \frac{s_r(t)}{\bar T_{go}},
-\end{equation}
-which gives the conservative sufficient condition
-\begin{equation}
-    s_r(T_c)
-    \ge
-    \bar T_{go}
+    \dot V
+    \le
+    -\delta_r(t)
     \left[
-    \frac{2}{c_1(1-p)}
+    c_1 V^{\frac{1+\alpha}{2}}
     +
-    \frac{2}{c_2(q-1)}
-    \right].
+    c_2 V^{\frac{1+\beta}{2}}
+    \right],
+    \label{eq:fixed_vdot}
 \end{equation}
-\end{remark}
+where $\delta_r(t)=1$ on trusted connected intervals and $\delta_r(t)=0$ otherwise, then $V$ reaches zero once
+\begin{equation}
+    \int_0^t \delta_r(s)\,ds
+    \ge
+    \frac{2}{c_1(1-\alpha)}
+    +
+    \frac{2}{c_2(\beta-1)}.
+    \label{eq:ft_condition}
+\end{equation}
+\end{corollary}
+
+\begin{proof}
+For $V>0$, set $z=\sqrt{V}$. From \eqref{eq:fixed_vdot},
+\begin{equation}
+    \dot z
+    \le
+    -\frac{\delta_r(t)}{2}
+    \left(c_1 z^\alpha+c_2 z^\beta\right).
+\end{equation}
+Using the accumulated trusted time $\tau_r(t)=\int_0^t\delta_r(s)ds$ as the time variable gives
+\begin{equation}
+    \frac{dz}{d\tau_r}
+    \le
+    -\frac{1}{2}
+    \left(c_1 z^\alpha+c_2 z^\beta\right).
+\end{equation}
+The standard fixed-time bound yields \eqref{eq:ft_condition}.
+\end{proof}
 
 \section{Connection With Probabilistic Safe Communication Time}
 
@@ -508,14 +532,12 @@ If the DoS process is random, the safe communication duration can be described p
 \end{equation}
 where $\mathcal{E}$ is the number of communication edges, $F(k)$ denotes the number of connected subgraphs obtained when exactly $k$ edges are preserved, and $\rho_c$ is the edge failure probability. The notation $\rho_c$ is used here to avoid conflict with the finite-time exponent $p$.
 
-Equation \eqref{eq:prob_safe_time} should be interpreted carefully. If $T_s$ is an expected value, it cannot by itself prove deterministic finite-time convergence. A deterministic theorem requires a lower bound on $S_r(t_f)$ or $s_r(t_f)$. In contrast, a probabilistic theorem can be stated in terms of
+Equation \eqref{eq:prob_safe_time} should be interpreted carefully. If $T_s$ is an expected value, it cannot by itself prove deterministic finite-time convergence. A deterministic theorem requires a lower bound on the accumulated trusted connectivity in \eqref{eq:finite_error_condition}. In contrast, a probabilistic theorem can be stated in terms of
 \begin{equation}
     \mathbb{P}\left\{
-    S_r(t_f)
+    \int_0^{t_f}\lambda_2(L_r(s))ds
     \ge
-    \frac{2}{c_1(1-p)}
-    +
-    \frac{2}{c_2(q-1)}
+    \frac{1}{2k}\ln\frac{V(0)}{\varepsilon}
     \right\}.
 \end{equation}
 This probability quantifies the likelihood that the vehicles complete time-to-go synchronization before interception under random link failures.
@@ -531,16 +553,16 @@ The first case verifies that the proposed guidance law reduces to the nominal co
 Several communication links are blocked over prescribed time intervals. The zero-bias strategy, the holding-type virtual leader, and the target-oriented virtual leader should be compared.
 
 \subsection{FDI-Only Case}
-Bias, sinusoidal, state-dependent, and slow-drift FDI signals are injected into selected links. The physical trust $\rho_{ij}^{\mathrm{phy}}(t)$, the group-consistency or GMM trust $\rho_{ij}^{\mathrm{gmm}}(t)$, the distribution trust $\rho_{ij}^{\mathrm{kl}}(t)$, and the final fused trust $\rho_{ij}(t)$ should be plotted to show how corrupted information is attenuated. This case should also compare the proposed multi-evidence trust evaluator with a single residual detector.
+Bias, sinusoidal, state-dependent, and slow-drift FDI signals are injected into selected links. The physical trust $\rho_{ij}^{\mathrm{phy}}(t)$, the group-consistency or GMM trust $\rho_{ij}^{\mathrm{gmm}}(t)$, the distribution trust $\rho_{ij}^{\mathrm{kl}}(t)$, and the final binary isolation decision $\sigma_{ij}(t)$ should be plotted to show when corrupted links are removed from the trusted graph. This case should also compare the proposed multi-evidence isolation rule with a single residual detector.
 
 \subsection{Hybrid DoS and FDI Case}
-Some links are blocked by DoS, while other available links are corrupted by FDI. This case is the main scenario for validating the unified reconstruction law \eqref{eq:effective_info}.
+Some links are blocked by DoS, while other available links are corrupted by FDI. This case is the main scenario for validating the trusted graph construction in \eqref{eq:trusted_adjacency}, where DoS-blocked and FDI-detected links are both excluded before the cooperative guidance command is computed.
 
 \subsection{Boundary Test on Effective Communication Time}
-The DoS duty cycle and FDI intensity are varied to test whether the convergence behavior changes consistently with the finite-time condition \eqref{eq:ft_condition}.
+The DoS duty cycle and FDI intensity are varied to test whether the convergence behavior changes consistently with the cumulative trusted-connectivity conditions \eqref{eq:finite_error_condition} and \eqref{eq:ft_condition}.
 
 \subsection{Ablation Study}
-The ablation study should remove one module at a time: physical feasibility, group-consistency/GMM trust, KLD window trust, virtual leader, safety switch, and zero-bias fallback. The expected metrics include miss distance, impact-time disagreement, $V(t)$, $S_r(t)$, trust-weight evolution, false alarm rate, missed detection rate, and command magnitude.
+The ablation study should remove one module at a time: physical feasibility, group-consistency/GMM trust, windowed residual statistics, link isolation, node isolation, and zero-bias fallback. The expected metrics include miss distance, impact-time disagreement, $V(t)$, $\int_0^t\lambda_2(L_r(s))ds$, trust-weight evolution, false alarm rate, missed detection rate, isolated-link count, and command magnitude.
 
 \section{Possible Contributions}
 
@@ -548,17 +570,17 @@ The method can be written as the following contributions:
 \begin{enumerate}
     \item A hybrid DoS-FDI attack model is established for cooperative guidance, simultaneously describing missing neighbor information and corrupted neighbor information.
     \item A multi-evidence FDI trust evaluation mechanism is proposed by combining physical feasibility, group-consistency clustering, and windowed distribution divergence, reducing the dependence on a single prediction residual.
-    \item A trusted-neighbor information reconstruction mechanism is proposed by combining the fused FDI trust, virtual-leader substitution, and a sign-consistency safety switch.
-    \item A finite-time convergence condition is derived in terms of weighted trusted effective communication time, clarifying when synchronization before interception can still be guaranteed under hybrid cyber attacks.
+    \item A trusted-graph isolation mechanism is proposed: DoS-blocked links and FDI-detected links are removed from the cooperative graph before they can affect the guidance command.
+    \item Exponential and fixed-time convergence conditions are derived in terms of accumulated trusted connectivity, clarifying when synchronization before interception can still be guaranteed under hybrid cyber attacks.
 \end{enumerate}
 
 \section{Technical Boundaries}
 
-Several limitations should be stated explicitly in the final manuscript. First, the physical feasibility interval in \eqref{eq:physical_interval} must be constructed from valid bounds on acceleration, target maneuver, and field-of-view constraints; otherwise the physical trust score may become overly conservative. Second, GMM-based trust requires enough neighbor redundancy to separate normal and suspicious clusters. If too many vehicles are attacked simultaneously, the clustering result may become unreliable. Third, KLD-based trust depends on the quality of the nominal residual distribution and the window length. A short window reacts quickly but may increase false alarms, whereas a long window is smoother but slower. Fourth, the virtual-leader dynamics should match the guidance model and the expected DoS duration. Finally, if field-of-view or nonsingularity auxiliary functions drive the effective gain to zero, finite-time convergence cannot be strictly guaranteed. In that case, the result should be weakened to asymptotic convergence, convergence to a small neighborhood, or finite-time convergence under an additional gain lower-bound condition.
+Several limitations should be stated explicitly in the final manuscript. First, the physical feasibility interval in \eqref{eq:physical_interval} must be constructed from valid bounds on acceleration, target maneuver, and field-of-view constraints; otherwise the physical trust score may become overly conservative. Second, GMM-based or median-based trust requires enough neighbor redundancy to separate normal and suspicious links. If too many vehicles are attacked simultaneously, the isolation result may remove too much of the communication graph. Third, windowed residual statistics depend on the quality of the nominal residual model and the window length. A short window reacts quickly but may increase false alarms, whereas a long window is smoother but slower. Fourth, link isolation protects the controller from detected corrupted data, but convergence still requires sufficient trusted connectivity after isolation. Finally, if field-of-view or nonsingularity auxiliary functions drive the effective impact-time control gain to zero, fixed-time convergence cannot be strictly guaranteed. In that case, the result should be weakened to asymptotic convergence, convergence to a small neighborhood, or finite-time convergence under an additional gain lower-bound condition.
 
 \section{Conclusion}
 
-This draft provides a complete framework for handling DoS and FDI attacks in cooperative guidance. The key is to avoid treating the two attacks as separate controller-design problems. Instead, the received neighbor information is processed by a trusted reconstruction layer before entering the guidance law. DoS is handled by virtual-leader substitution and zero-bias fallback, whereas FDI is handled by a multi-evidence trust evaluation mechanism that combines physical feasibility, group consistency, and windowed distribution divergence. Under sufficient weighted trusted effective communication time, the cooperative error can be shown to converge before interception.
+This draft provides a complete framework for handling DoS and FDI attacks in cooperative guidance. The key is to avoid allowing unavailable or corrupted neighbor data to enter the cooperative guidance law. DoS is handled as link unavailability, whereas detected FDI is handled by isolating the corrupted link or, in conservative cases, the compromised node. The resulting trusted graph is used to construct the impact-time synchronization error and the cooperative guidance command. Under sufficient accumulated trusted connectivity after isolation, the predicted impact times converge before interception or reach a prescribed disagreement bound at the terminal time.
 
 \balance
 \end{document}

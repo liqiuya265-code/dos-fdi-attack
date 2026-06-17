@@ -39,7 +39,17 @@ def physical_quantities(pos, gamma, speed, target):
     return r, lam, eta, vc, tgo
 
 
-def run_case(case_name, defense=True, attack=True):
+def algebraic_connectivity(trusted):
+    """Algebraic connectivity of the symmetrized trusted graph."""
+    adj = trusted.astype(float)
+    adj = np.maximum(adj, adj.T)
+    np.fill_diagonal(adj, 0.0)
+    lap = np.diag(adj.sum(axis=1)) - adj
+    eigvals = np.linalg.eigvalsh(lap)
+    return float(eigvals[1]) if eigvals.size > 1 else 0.0
+
+
+def run_case(case_name, defense=True, attack=True, node_isolation=False):
     np.random.seed(2)
     n = 5
     target = np.array([0.0, 0.0])
@@ -71,12 +81,15 @@ def run_case(case_name, defense=True, attack=True):
     k_beta = 0.25
 
     r0, _, _, _, tgo0 = physical_quantities(pos, gamma, speed, target)
-    virtual_tgo0 = float(np.max(tgo0) + 2.5)
-
     rho = np.ones((n, n))
+    isolated_link = np.zeros((n, n), dtype=bool)
+    isolated_node = np.zeros(n, dtype=bool)
     last_value = np.tile(tgo0, (n, 1))
     last_time = np.zeros((n, n))
     resid_hist = [[[] for _ in range(n)] for _ in range(n)]
+    isolate_threshold = 0.42
+    update_threshold = 0.85
+    node_vote_threshold = max(2, int(math.ceil(0.6 * (n - 1))))
 
     active = np.ones(n, dtype=bool)
     hit_time = np.full(n, np.nan)
@@ -87,14 +100,17 @@ def run_case(case_name, defense=True, attack=True):
     hist_cmd = []
     hist_trust_01 = []
     hist_trust_03 = []
+    hist_sigma_01 = []
+    hist_sigma_03 = []
+    hist_lambda2 = []
+    hist_cum_lambda2 = []
+    cum_lambda2 = 0.0
     hist_spread = []
     traj = [[] for _ in range(n)]
 
     for k in range(steps):
         t = k * dt
         r, lam, eta, vc, tgo = physical_quantities(pos, gamma, speed, target)
-        virtual_tgo = max(virtual_tgo0 - t, 0.2)
-
         for i in range(n):
             traj[i].append(pos[i].copy())
             if active[i] and r[i] <= hit_radius:
@@ -110,7 +126,6 @@ def run_case(case_name, defense=True, attack=True):
             for j in range(n):
                 reports[j] += fdi_bias(j, t)
 
-        reconstructed = np.tile(tgo, (n, 1))
         available = np.ones((n, n), dtype=bool)
 
         for i in range(n):
@@ -120,6 +135,8 @@ def run_case(case_name, defense=True, attack=True):
                 elif attack and not dos_available(t):
                     available[i, j] = False
 
+        trusted = np.zeros((n, n), dtype=bool)
+
         if defense:
             norm_resid = np.zeros((n, n))
             phy_score = np.ones((n, n))
@@ -127,7 +144,7 @@ def run_case(case_name, defense=True, attack=True):
                 for j in range(n):
                     if i == j:
                         continue
-                    if available[i, j]:
+                    if available[i, j] and not isolated_link[i, j] and not isolated_node[i] and not isolated_node[j]:
                         elapsed = max(t - last_time[i, j], 0.0)
                         pred = max(last_value[i, j] - elapsed, 0.0)
                         eps = 1.2 + 0.12 * elapsed + 0.018 * elapsed**2
@@ -137,7 +154,15 @@ def run_case(case_name, defense=True, attack=True):
                         phy_score[i, j] = math.exp(-1.5 * (excess / eps) ** 2)
 
             for i in range(n):
-                idx = [j for j in range(n) if j != i and available[i, j]]
+                idx = [
+                    j
+                    for j in range(n)
+                    if j != i
+                    and available[i, j]
+                    and not isolated_link[i, j]
+                    and not isolated_node[i]
+                    and not isolated_node[j]
+                ]
                 if idx:
                     med = float(np.median([norm_resid[i, j] for j in idx]))
                     report_med = float(np.median([reports[j] for j in idx]))
@@ -147,7 +172,7 @@ def run_case(case_name, defense=True, attack=True):
                 for j in range(n):
                     if i == j:
                         continue
-                    if available[i, j]:
+                    if available[i, j] and not isolated_link[i, j] and not isolated_node[i] and not isolated_node[j]:
                         residual_consistency = math.exp(-0.8 * abs(norm_resid[i, j] - med))
                         report_consistency = math.exp(-0.35 * max(abs(reports[j] - report_med) - 3.0, 0.0))
                         group_score = min(residual_consistency, report_consistency)
@@ -159,29 +184,40 @@ def run_case(case_name, defense=True, attack=True):
                         rho[i, j] += dt * 4.0 * (rho_bar - rho[i, j])
                         rho[i, j] = float(np.clip(rho[i, j], 0.0, 1.0))
 
-                        if rho[i, j] > 0.85:
+                        if rho[i, j] < isolate_threshold:
+                            isolated_link[i, j] = True
+                            trusted[i, j] = False
+                        else:
+                            trusted[i, j] = True
+
+                        if rho[i, j] > update_threshold:
                             last_value[i, j] = reports[j]
                             last_time[i, j] = t
 
-                        reconstructed[i, j] = rho[i, j] * reports[j] + (1.0 - rho[i, j]) * virtual_tgo
-                    else:
-                        reconstructed[i, j] = virtual_tgo
+            if node_isolation:
+                for j in range(n):
+                    incoming_isolations = int(np.sum(isolated_link[:, j]))
+                    if incoming_isolations >= node_vote_threshold:
+                        isolated_node[j] = True
+                        trusted[:, j] = False
+                        trusted[j, :] = False
         else:
             for i in range(n):
                 for j in range(n):
                     if i == j:
                         continue
                     if available[i, j]:
-                        reconstructed[i, j] = reports[j]
-                    else:
-                        reconstructed[i, j] = tgo[i]
+                        trusted[i, j] = True
 
         cmd = np.zeros(n)
         for i in range(n):
             if not active[i]:
                 continue
-            neigh = [j for j in range(n) if j != i]
-            ref = float(np.mean([reconstructed[i, j] for j in neigh]))
+            neigh = [j for j in range(n) if j != i and trusted[i, j]]
+            if neigh:
+                ref = float(np.mean([reports[j] for j in neigh]))
+            else:
+                ref = float(tgo[i])
             delay_need = max(ref - tgo[i], 0.0)
             terminal_gate = float(np.clip((tgo[i] - 4.0) / 9.0, 0.0, 1.0))
             beta = side[i] * beta_max * math.tanh(k_beta * delay_need) * terminal_gate
@@ -193,12 +229,18 @@ def run_case(case_name, defense=True, attack=True):
             pos[i, 0] += speed[i] * math.cos(gamma[i]) * dt
             pos[i, 1] += speed[i] * math.sin(gamma[i]) * dt
 
+        lambda2 = algebraic_connectivity(trusted)
+        cum_lambda2 += lambda2 * dt
         alive_tgo = tgo[active] if np.any(active) else tgo
         hist_t.append(t)
         hist_tgo.append(tgo.copy())
         hist_cmd.append(cmd.copy())
         hist_trust_01.append(rho[0, 1])
         hist_trust_03.append(rho[0, 3])
+        hist_sigma_01.append(float(trusted[0, 1]))
+        hist_sigma_03.append(float(trusted[0, 3]))
+        hist_lambda2.append(lambda2)
+        hist_cum_lambda2.append(cum_lambda2)
         hist_spread.append(float(np.max(alive_tgo) - np.min(alive_tgo)))
 
     for i in range(n):
@@ -216,6 +258,9 @@ def run_case(case_name, defense=True, attack=True):
         "mean_miss": float(np.mean(miss)),
         "min_trust_link_0_1": float(np.min(hist_trust_01)) if hist_trust_01 else 1.0,
         "min_trust_link_0_3": float(np.min(hist_trust_03)) if hist_trust_03 else 1.0,
+        "isolated_link_count": int(np.sum(isolated_link)),
+        "isolated_node_count": int(np.sum(isolated_node)),
+        "cum_lambda2": float(cum_lambda2),
     }
 
     return {
@@ -227,6 +272,10 @@ def run_case(case_name, defense=True, attack=True):
         "spread": np.array(hist_spread),
         "trust01": np.array(hist_trust_01),
         "trust03": np.array(hist_trust_03),
+        "sigma01": np.array(hist_sigma_01),
+        "sigma03": np.array(hist_sigma_03),
+        "lambda2": np.array(hist_lambda2),
+        "cum_lambda2": np.array(hist_cum_lambda2),
         "traj": [np.array(x) for x in traj],
         "target": target,
     }
@@ -276,15 +325,16 @@ def make_plots(cases):
 
     ax = axes[1, 0]
     defended = next(c for c in cases if c["name"] == "Hybrid attack with proposed defense")
-    ax.plot(defended["t"], defended["trust01"], color="#7a5195", lw=1.8, label="trust: receiver 0, sender 1")
-    ax.plot(defended["t"], defended["trust03"], color="#ef5675", lw=1.8, label="trust: receiver 0, sender 3")
+    ax.plot(defended["t"], defended["sigma01"], color="#7a5195", lw=1.8, label="trusted link: receiver 0, sender 1")
+    ax.plot(defended["t"], defended["sigma03"], color="#ef5675", lw=1.8, label="trusted link: receiver 0, sender 3")
+    ax.plot(defended["t"], defended["lambda2"], color="#2a9d8f", lw=1.4, alpha=0.85, label="trusted graph lambda2")
     ax.axvspan(10, 33, color="#d95f02", alpha=0.12, label="FDI interval")
     ax.axvspan(8, 13, color="#999999", alpha=0.15, label="DoS interval")
     ax.axvspan(22, 26, color="#999999", alpha=0.15)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 5.2)
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Trust")
-    ax.set_title("Trust attenuation on attacked links")
+    ax.set_ylabel("Isolation state / connectivity")
+    ax.set_title("Link isolation and trusted connectivity")
     ax.grid(True, alpha=0.25)
     ax.legend(frameon=False, fontsize=8)
 
