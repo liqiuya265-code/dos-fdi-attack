@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.5.21)  17 JUN 2026 19:25
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.5.21)  17 JUN 2026 20:26
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -420,35 +420,35 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 026/texmf-dist/fonts/enc/dvips/base/8r.enc}
 
 
-] [2] [3]
-Underfull \hbox (badness 2173) in paragraph at lines 482--483
+] [2] [3] [4]
+Underfull \hbox (badness 2173) in paragraph at lines 533--534
 \OT1/ptm/b/n/10 Corollary 1 \OT1/ptm/m/n/10 (Fixed--time con-ver-gence with ac-
 cu-mu-lated
  []
 
-[4]
-Underfull \hbox (badness 1609) in paragraph at lines 572--573
+
+Underfull \hbox (badness 1609) in paragraph at lines 623--624
 \OT1/ptm/m/n/10 pro-posed by com-bin-ing phys-i-cal fea-si-bil-ity, group-
  []
 
+[5]
+Overfull \vbox (0.51492pt too high) has occurred while \output is active []
 
-Package balance Warning: You have called \balance in second column
-(balance)                Columns might not be balanced.
 
-[5] (./New_IEEEtran_how-to.aux)
+[6] (./New_IEEEtran_how-to.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 5177 strings out of 467525
- 85422 string characters out of 5423209
- 512591 words of memory out of 5000000
- 34023 multiletter control sequences out of 15000+600000
+ 5180 strings out of 467525
+ 85496 string characters out of 5423209
+ 511669 words of memory out of 5000000
+ 34026 multiletter control sequences out of 15000+600000
  665874 words of font info for 110 fonts, out of 8000000 for 9000
  1145 hyphenation exceptions out of 8191
- 57i,9n,65p,1330b,251s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,9n,65p,1330b,254s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb><c:/tex
 live/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-di
@@ -463,10 +463,10 @@ st/fonts/type1/public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/f
 onts/type1/urw/times/utmb8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/tim
 es/utmbi8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><c:
 /texlive/2026/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on New_IEEEtran_how-to.pdf (5 pages, 210856 bytes).
+Output written on New_IEEEtran_how-to.pdf (6 pages, 215590 bytes).
 PDF statistics:
- 101 PDF objects out of 1000 (max. 8388607)
- 61 compressed objects within 1 object stream
+ 104 PDF objects out of 1000 (max. 8388607)
+ 63 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

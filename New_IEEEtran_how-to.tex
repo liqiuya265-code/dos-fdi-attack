@@ -301,18 +301,24 @@ The detection layer is used only to decide whether a received datum is allowed t
     \end{cases}
     \label{eq:fdi_isolation}
 \end{equation}
-The trusted adjacency entry is
+For the convergence proof, the trusted graph is taken as an undirected graph. This is consistent with bidirectional cooperative communication, or with a symmetrized implementation in which a pairwise cooperative edge is used only when both directional messages are available and trusted. Thus the trusted adjacency entry used in the analysis is
 \begin{equation}
     a_{ij}^{r}(t)
     =
-    a_{ij}\gamma_{ij}(t)\sigma_{ij}(t),
+    a_{ij}
+    \gamma_{ij}^{r}(t)
+    \sigma_{ij}^{r}(t),
+    \quad
+    a_{ij}^{r}(t)=a_{ji}^{r}(t),
     \label{eq:trusted_adjacency}
 \end{equation}
-and the resulting trusted graph is denoted by $\mathcal{G}_r(t)=(\mathcal{V},\mathcal{E}_r(t))$. Thus, DoS and detected FDI have the same effect at the control layer: the corresponding edge is excluded. If several outgoing links of the same sender are detected as corrupted, a conservative node-isolation rule may also be used:
+where $\gamma_{ij}^{r}(t)=\gamma_{ij}(t)\gamma_{ji}(t)$ and $\sigma_{ij}^{r}(t)=\sigma_{ij}(t)\sigma_{ji}(t)$ for $i\ne j$. If only directed communication is available, the same controller can still be implemented, but the proof must be replaced by a weight-balanced or strongly connected directed-graph argument. The resulting trusted graph is denoted by $\mathcal{G}_r(t)=(\mathcal{V},\mathcal{E}_r(t))$. Thus, DoS and detected FDI have the same effect at the control layer: the corresponding edge is excluded. If several outgoing links of the same sender are detected as corrupted, a conservative node-isolation rule may also be used:
 \begin{equation}
     a_{ij}^{r}(t)
     =
-    a_{ij}\gamma_{ij}(t)\sigma_i(t)\sigma_j(t),
+    a_{ij}
+    \gamma_{ij}^{r}(t)
+    \sigma_i(t)\sigma_j(t),
     \label{eq:node_isolation}
 \end{equation}
 where $\sigma_j(t)=0$ removes node $j$ from the cooperative graph. The main analysis below is stated for link isolation; node isolation follows by applying the same proof to the remaining normal-node subgraph.
@@ -344,7 +350,32 @@ The virtual-leader variable can still be used for trajectory smoothing or for lo
 
 \section{Resilient Cooperative Guidance Law}
 
-The cooperative guidance objective is to regulate the predicted impact times $T_i$. At the abstract synchronization level, the trusted-graph feedback can be written as
+The cooperative guidance objective is to regulate the predicted impact times $T_i$. To connect the graph-level controller with the planar guidance command, write the local impact-time dynamics in an input-affine form
+\begin{equation}
+    \dot T_i
+    =
+    \phi_i(t)
+    +
+    g_i(t)a_i^{\mathrm{coop}}
+    +
+    d_i(t),
+    \label{eq:impact_time_channel}
+\end{equation}
+where $a_i^{\mathrm{coop}}$ is the scalar cooperative normal-acceleration component, $\phi_i(t)$ is the drift induced by the baseline guidance and engagement geometry, $g_i(t)$ is the local impact-time sensitivity to the cooperative acceleration, and $d_i(t)$ collects modeling error. This representation is obtained by differentiating $T_i=t+t_{go,i}$ along the relative-motion equations and separating the part driven by the cooperative acceleration. The controller is applied only on intervals where
+\begin{equation}
+    0<\underline g\le |g_i(t)|\le \bar g<\infty.
+    \label{eq:channel_gain_bound}
+\end{equation}
+The desired synchronization input is denoted by $v_i$. The normal-acceleration command can then be selected as
+\begin{equation}
+    a_i^{\mathrm{coop}}
+    =
+    \frac{v_i-\phi_i(t)}{g_i(t)}
+    \label{eq:feedback_linearization}
+\end{equation}
+when $g_i(t)$ is known, or by a robust approximation when $g_i(t)$ is estimated. In the nominal analysis $d_i=0$, so \eqref{eq:impact_time_channel} reduces to $\dot T_i=v_i$.
+
+At the abstract synchronization level, the trusted-graph feedback is
 \begin{equation}
     \dot T
     =
@@ -378,7 +409,7 @@ where $k_1,k_2>0$, $0<\alpha<1$, $\beta>1$, and $\operatorname{sig}^{\mu}(x)=|x|
 where $\bm a_i^{\mathrm{PNG}}$ is the baseline interception term and $\bm a_i^{\mathrm{coop}}$ implements either \eqref{eq:linear_sync} or \eqref{eq:fixed_time_sync} through the local relation between normal acceleration and $\dot T_i$.
 
 \begin{assumption}[Impact-time control channel]
-For each non-isolated normal vehicle, the cooperative acceleration can realize the desired $\dot T_i$ with a bounded gain error. In the nominal proof this relation is exact; under modeling uncertainty it is exact up to a bounded disturbance $d_i(t)$ with $|d_i(t)|\le \bar d$.
+For each non-isolated normal vehicle, the sensitivity $g_i(t)$ satisfies \eqref{eq:channel_gain_bound} on the time interval considered. In the nominal theorem the compensated channel satisfies $\dot T_i=v_i$. Under modeling uncertainty, the compensated channel satisfies $\dot T_i=v_i+d_i(t)$ with $\|d(t)\|\le \bar d$.
 \end{assumption}
 
 \section{Convergence Under DoS and Detected FDI}
@@ -386,7 +417,7 @@ For each non-isolated normal vehicle, the cooperative acceleration can realize t
 The convergence analysis is now a switching-graph problem. DoS removes unavailable links through $\gamma_{ij}=0$, and detected FDI removes corrupted links through $\sigma_{ij}=0$. Hence, the only graph that enters the controller is $\mathcal{G}_r(t)$.
 
 \begin{assumption}[Trusted connectivity after isolation]
-There exists a constant $\underline{\lambda}>0$ such that, during trusted connected intervals,
+The trusted graph $\mathcal{G}_r(t)$ is undirected and piecewise constant, with finitely many switches on every finite time interval. There exists a constant $\underline{\lambda}>0$ such that, during trusted connected intervals,
 \begin{equation}
     \lambda_2(L_r(t))\ge \underline{\lambda}.
     \label{eq:lambda_lower}
@@ -413,7 +444,7 @@ The Lyapunov function is
 \end{equation}
 
 \begin{theorem}[Exponential convergence under trusted connectivity]
-Consider the trusted-graph control law \eqref{eq:linear_sync}. Suppose that detected FDI links and DoS-blocked links are excluded according to \eqref{eq:trusted_adjacency}. Then the disagreement energy satisfies
+Consider the nominal compensated impact-time dynamics $\dot T=-kL_r(t)T$ generated by \eqref{eq:impact_time_channel}--\eqref{eq:feedback_linearization}. Suppose that detected FDI links and DoS-blocked links are excluded according to \eqref{eq:trusted_adjacency}. Then the disagreement energy satisfies
 \begin{equation}
     V(t)
     \le
@@ -431,7 +462,7 @@ Consequently, if
     \int_0^\infty \lambda_2(L_r(s))\,ds=\infty,
     \label{eq:cumulative_connectivity}
 \end{equation}
-then $T_i(t)-T_j(t)\to0$ for all normal vehicles. For a prescribed terminal time $t_f$, the sufficient condition
+then $T_i(t)-T_j(t)\to0$ for all non-isolated normal vehicles that belong to the trusted graph. For a prescribed terminal time $t_f$, the sufficient condition
 \begin{equation}
     \int_0^{t_f}
     \lambda_2(L_r(s))\,ds
@@ -443,7 +474,7 @@ guarantees $V(t_f)\le\varepsilon$.
 \end{theorem}
 
 \begin{proof}
-Because $L_r(t)\mathbf{1}=0$, one has $ML_r(t)=L_r(t)M=L_r(t)$ for an undirected trusted graph. During trusted intervals governed by \eqref{eq:linear_sync},
+Because the trusted graph is undirected, $L_r(t)$ is symmetric positive semidefinite and satisfies $L_r(t)\mathbf{1}=0$. Hence $ML_r(t)=L_r(t)M=L_r(t)$. During intervals governed by \eqref{eq:linear_sync},
 \begin{equation}
     \dot{\tilde T}
     =
@@ -475,11 +506,31 @@ Hence,
     \le
     -2k\lambda_2(L_r)V.
 \end{equation}
-During disconnected or unsafe intervals, the nonexpansive fallback gives $\dot V\le0$, which is the same inequality with $\lambda_2(L_r)=0$. Thus the inequality holds for all time. Applying the comparison lemma gives \eqref{eq:exp_bound}. Conditions \eqref{eq:cumulative_connectivity} and \eqref{eq:finite_error_condition} follow directly from \eqref{eq:exp_bound}.
+When the trusted graph is disconnected, $L_r(t)$ is still positive semidefinite, so the same calculation gives $\dot V\le0$ and $\lambda_2(L_r)=0$. The nonexpansive fallback therefore preserves this inequality even when unsafe links are removed or the cooperative term is set to zero. Since the switching signal is piecewise constant and has no Zeno behavior, the comparison lemma can be applied on successive intervals and concatenated over time. This gives \eqref{eq:exp_bound}. Conditions \eqref{eq:cumulative_connectivity} and \eqref{eq:finite_error_condition} follow directly from \eqref{eq:exp_bound}.
 \end{proof}
 
+\begin{remark}[Effect of bounded channel error]
+If the compensated channel has a bounded residual disturbance, $\dot T=-kL_rT+d(t)$, then
+\begin{equation}
+    \dot V
+    \le
+    -2k\lambda_2(L_r)V
+    +
+    \|\tilde T\|\,\|Md\|.
+\end{equation}
+On intervals where $\lambda_2(L_r)\ge\underline\lambda$, Young's inequality gives
+\begin{equation}
+    \dot V
+    \le
+    -k\underline\lambda V
+    +
+    \frac{\|Md\|^2}{2k\underline\lambda}.
+\end{equation}
+Thus bounded impact-time channel error leads to practical synchronization, with an ultimate disagreement bound proportional to $\bar d/(k\underline\lambda)$ rather than exact convergence.
+\end{remark}
+
 \begin{corollary}[Fixed-time convergence with accumulated trusted time]
-Under \eqref{eq:fixed_time_sync}, suppose that the trusted connected graph satisfies \eqref{eq:lambda_lower} during connected intervals and that the fallback is nonexpansive otherwise. If there exist constants $c_1,c_2>0$ such that
+Under the fixed-time controller \eqref{eq:fixed_time_sync}, suppose that the trusted connected graph satisfies \eqref{eq:lambda_lower} during connected intervals and that the fallback is nonexpansive otherwise. If the controller and the impact-time channel yield constants $c_1,c_2>0$ such that
 \begin{equation}
     \dot V
     \le
